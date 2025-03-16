@@ -1,0 +1,95 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Build
+      run: |
+        chmod +x build-all.sh
+        ./build-all.sh
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: true
+        prerelease: true
+
+    - name: Upload Release Asset (Linux AMD64)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/code2md-linux-amd64
+        asset_name: code2md-linux-amd64
+        asset_content_type: application/octet-stream
+
+    - name: Upload Release Asset (Linux ARM64)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/code2md-linux-arm64
+        asset_name: code2md-linux-arm64
+        asset_content_type: application/octet-stream
+
+    - name: Upload Release Asset (Darwin AMD64)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/code2md-darwin-amd64
+        asset_name: code2md-darwin-amd64
+        asset_content_type: application/octet-stream
+
+    - name: Upload Release Asset (Darwin ARM64)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/code2md-darwin-arm64
+        asset_name: code2md-darwin-arm64
+        asset_content_type: application/octet-stream
+
+    - name: Upload Release Asset (Windows AMD64)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/code2md-windows-amd64.exe
+        asset_name: code2md-windows-amd64.exe
+        asset_content_type: application/octet-stream
+
+    - name: Upload Release Asset (Windows ARM64)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/code2md-windows-arm64.exe
+        asset_name: code2md-windows-arm64.exe
+        asset_content_type: application/octet-stream

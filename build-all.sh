@@ -33,7 +33,7 @@ build_target() {
   echo "[$(date +%H:%I:%S)] Building for $GOOS-$GOARCH..."
   export GOOS GOARCH
   if [[ $xFlag != "" ]] && go build -ldflags "-X $xFlag" -o "$distDir/${appName}-${GOOS}-${GOARCH}${suffix}"; then
-    echo "[$(date +%H:%I:%S)] Build successful for $GOOS-$GOARCH"
+    echo "[$(date +%H:%I:%S)] Build successful for $GOOS-$GOARCH (Version: $1)"
     return 0
   elif go build -o "$distDir/${appName}-${GOOS}-${GOARCH}${suffix}"; then
     echo "[$(date +%H:%I:%S)] Build successful for $GOOS-$GOARCH"

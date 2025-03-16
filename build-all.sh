@@ -57,4 +57,10 @@ for pid in "${pids[@]}"; do
 done
 
 # Check if any build failed
-exit "$returnStatus"
+if [ "$returnStatus" -gt "0" ]; then
+  exit "$returnStatus"
+fi
+
+# generate checksums
+echo "Generating Checksums"
+cd dist && sha256sum * > CHECKSUMS.txt && cd .. && echo "Checksums generated" && exit 0

@@ -18,7 +18,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version: '>= 1.18'
 
     - name: Build
       run: |
@@ -35,6 +35,16 @@ jobs:
         release_name: Release ${{ github.ref }}
         draft: true
         prerelease: true
+
+    - name: Upload CHECKSUMS.txt
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/CHECKSUMS.txt
+        asset_name: CHECKSUMS.txt
+        asset_content_type: text/plain
 
     - name: Upload Release Asset (Linux AMD64)
       uses: actions/upload-release-asset@v1

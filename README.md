@@ -1,3 +1,7 @@
+
+[![CI Shellcheck](https://github.com/ahoehne/code2md/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/ahoehne/code2md/actions/workflows/shellcheck.yml)
+[![Go CLI Test](https://github.com/ahoehne/code2md/actions/workflows/go-tests.yaml/badge.svg)](https://github.com/ahoehne/code2md/actions/workflows/go-tests.yaml)
+
 # code2md
 
 `code2md` is a command-line tool that converts code from a specified directory into a Markdown file. It supports multiple programming languages and allows for customization through command-line flags.

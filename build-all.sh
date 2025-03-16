@@ -63,4 +63,4 @@ fi
 
 # generate checksums
 echo "Generating Checksums"
-cd dist && sha256sum * > CHECKSUMS.txt && cd .. && echo "Checksums generated" && exit 0
+cd dist && sha256sum -- * > CHECKSUMS.txt && cd .. && echo "Checksums generated" && exit 0

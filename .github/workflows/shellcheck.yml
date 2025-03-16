@@ -1,0 +1,22 @@
+name: CI Shellcheck
+
+on:
+  push:
+    branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Shellcheck
+        # not needed in gh actions, but when running locally via act
+        run: sudo apt update && sudo apt install shellcheck
+
+      - name: Run shellcheck of *.sh
+        run: shellcheck *.sh

@@ -1,0 +1,9 @@
+# ability to generate md with own code
+code.md
+
+# coverage reports
+cov/
+
+# compiled result
+code2md
+dist/

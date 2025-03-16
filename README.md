@@ -1,32 +1,61 @@
 
-[![CI Shellcheck](https://github.com/ahoehne/code2md/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/ahoehne/code2md/actions/workflows/shellcheck.yml)
+![GitHub License](https://img.shields.io/github/license/ahoehne/code2md)
+![GitHub Release](https://img.shields.io/github/v/release/ahoehne/code2md?include_prereleases)
+
 [![Go CLI Test](https://github.com/ahoehne/code2md/actions/workflows/go-tests.yaml/badge.svg)](https://github.com/ahoehne/code2md/actions/workflows/go-tests.yaml)
+[![CI Shellcheck](https://github.com/ahoehne/code2md/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/ahoehne/code2md/actions/workflows/shellcheck.yml)
 
 # code2md
 
 `code2md` is a command-line tool that converts code from a specified directory into a Markdown file. It supports multiple programming languages and allows for customization through command-line flags.
 
-## Requirements
-
-- Go 1.18 or later
-- Make (for build and installation tasks)
-
 ## Installation
 
-To install `code2md`, follow these steps:
+### From Released Binaries
+For the easiest installation, download a pre-built binary.
 
-1. Clone the repository:
+**Download the Binary:**
+- Go to the [releases page](https://github.com/ahoehne/code2md/releases).
+- Download the latest binary for your operating system.
+- **Windows**
+   - Rename the downloaded file to code2md.exe.
+    - Place the binary in a directory that is included in your system's PATH, such as C:\Windows, or add the directory containing code2md.exe to your PATH environment variable.
+
+
+- **Linux/Mac:**
+   1. Rename the binary based on your architecture:
+      ```sh 
+      mv code2md-linux-amd64 code2md    # For Linux AMD64
+      mv code2md-linux-arm64 code2md    # For Linux ARM64
+      mv code2md-darwin-amd64 code2md   # For macOS AMD64
+      mv code2md-darwin-arm64 code2md   # For macOS ARM64
+      ```
+   2. make the binary executable and move it to `/usr/local/bin`
+      ```sh
+      chmod +x code2md
+      sudo mv code2md /usr/local/bin/
+      ```
+
+### From Source
+
+1. Requirements:
+   Install the following dependencies
+   - Git to clone this repository
+   - Go 1.18 or later
+   - Make (for build and installation tasks)
+
+2. Clone the repository:
    ```sh
    git clone https://github.com/ahoehne/code2md.git
    cd code2md
    ```
 
-2. Build the application:
+3. Build the application:
    ```sh
    make build
    ```
 
-3. Install the application:
+4. Install the application:
    ```sh
    sudo make install
    ```

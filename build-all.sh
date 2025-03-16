@@ -10,8 +10,10 @@ rm -rdf "$distDir" 2>/dev/null
 mkdir -p "$distDir" || exit 100
 
 xFlag=""
+versionNumber=""
 if [[ "$1" == v* ]] ; then
   xFlag="main.VersionNumber=$1"
+  versionNumber="$1"
 fi
 
 # Define the target architectures and their respective file suffixes
@@ -33,7 +35,7 @@ build_target() {
   echo "[$(date +%H:%I:%S)] Building for $GOOS-$GOARCH..."
   export GOOS GOARCH
   if [[ $xFlag != "" ]] && go build -ldflags "-X $xFlag" -o "$distDir/${appName}-${GOOS}-${GOARCH}${suffix}"; then
-    echo "[$(date +%H:%I:%S)] Build successful for $GOOS-$GOARCH (Version: $1)"
+    echo "[$(date +%H:%I:%S)] Build successful for $GOOS-$GOARCH (Version: $versionNumber)"
     return 0
   elif go build -o "$distDir/${appName}-${GOOS}-${GOARCH}${suffix}"; then
     echo "[$(date +%H:%I:%S)] Build successful for $GOOS-$GOARCH"

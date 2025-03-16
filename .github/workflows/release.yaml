@@ -23,8 +23,10 @@ jobs:
     - name: Build
       run: |
         chmod +x build-all.sh
-        TAG_NAME=\${GITHUB_REF#refs/tags/}
-        ./build-all.sh $TAG_NAME
+        TAG_NAME=${GITHUB_REF#refs/tags/}
+        echo "Github Ref: ${GITHUB_REF}"
+        echo "Tag Name: ${TAG_NAME}"
+        ./build-all.sh ${TAG_NAME}
 
     - name: Create Release
       id: create_release

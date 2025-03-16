@@ -9,6 +9,11 @@ distDir="dist"
 rm -rdf "$distDir" 2>/dev/null
 mkdir -p "$distDir" || exit 100
 
+xFlag=""
+if [[ "$1" == v* ]] ; then
+  xFlag="main.VersionNumber=$1"
+fi
+
 # Define the target architectures and their respective file suffixes
 declare -A targets=(
   ["windows-amd64"]=".exe"
@@ -27,7 +32,10 @@ build_target() {
 
   echo "[$(date +%H:%I:%S)] Building for $GOOS-$GOARCH..."
   export GOOS GOARCH
-  if go build -o "$distDir/${appName}-${GOOS}-${GOARCH}${suffix}"; then
+  if [[ $xFlag != "" ]] && go build -ldflags "-X $xFlag" -o "$distDir/${appName}-${GOOS}-${GOARCH}${suffix}"; then
+    echo "[$(date +%H:%I:%S)] Build successful for $GOOS-$GOARCH"
+    return 0
+  elif go build -o "$distDir/${appName}-${GOOS}-${GOARCH}${suffix}"; then
     echo "[$(date +%H:%I:%S)] Build successful for $GOOS-$GOARCH"
     return 0
   else

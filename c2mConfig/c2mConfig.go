@@ -19,6 +19,8 @@ type Config struct {
 	OutputMarkdown   string
 	AllowedFileNames map[string]bool
 	IgnorePatterns   []string
+	Help             bool
+	Version          bool
 }
 
 var AllowedLanguages = map[string]bool{
@@ -38,11 +40,15 @@ func InitializeConfigFromFlags() Config {
 	outputMarkdown := flag.String("output", "", "Output Markdown file")
 	languages := flag.String("languages", "", "Comma-separated list of allowed languages")
 	ignorePatterns := flag.String("ignore", "", "Comma-separated list of files and/or search patterns to ignore")
+	help := flag.Bool("help", false, "Show help")
+	v := flag.Bool("version", false, "Show version information")
 
 	flag.StringVar(inputFolder, "i", "", "Input folder to scan (shorthand)")
 	flag.StringVar(outputMarkdown, "o", "", "Output Markdown file (shorthand)")
 	flag.StringVar(languages, "l", defaultAllowedLanguages, "languages (shorthand)")
 	flag.StringVar(ignorePatterns, "I", defaultIgnoredPatterns, "ignore patterns (shorthand)")
+	flag.BoolVar(help, "h", false, "help (shorthand)")
+	flag.BoolVar(v, "v", false, "version (shorthand)")
 
 	flag.Parse()
 
@@ -54,6 +60,8 @@ func InitializeConfigFromFlags() Config {
 		OutputMarkdown:   *outputMarkdown,
 		AllowedFileNames: fetchAllowedFileNames(AllowedLanguages),
 		IgnorePatterns:   ignorePatternsList,
+		Help:             *help,
+		Version:          *v,
 	}
 }
 

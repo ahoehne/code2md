@@ -23,7 +23,7 @@ jobs:
     - name: Build
       run: |
         chmod +x build-all.sh
-        ./build-all.sh
+        ./build-all.sh "${{ github.ref }}"
 
     - name: Create Release
       id: create_release

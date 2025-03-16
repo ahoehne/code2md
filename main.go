@@ -5,13 +5,20 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 )
 
+var VersionNumber string
+
 func main() {
 	config := c2mConfig.InitializeConfigFromFlags()
-	if !c2mConfig.IsConfigValid(config) {
-		displayUsageInstructions(c2mConfig.GetActiveLanguages(), c2mConfig.GetInactiveLanguages())
+	if config.Version {
+		displayVersion()
+		return
+	}
+	if !c2mConfig.IsConfigValid(config) || config.Help {
+		displayUsageInstructions(c2mConfig.GetActiveLanguages(), c2mConfig.GetInactiveLanguages(), !config.Help)
 		return
 	}
 
@@ -28,8 +35,25 @@ func main() {
 	}
 }
 
-func displayUsageInstructions(activeLangs, inactiveLangs []string) {
-	fmt.Println("Error: You must provide both an input folder and an output file.")
+func displayVersion() {
+	buildInfo, ok := debug.ReadBuildInfo()
+	if ok && VersionNumber == "" {
+		fmt.Print(buildInfo)
+		return
+	}
+	fmt.Printf("code2md %s\n", VersionNumber)
+	if !ok && buildInfo.GoVersion == "" {
+		println("error determing go version")
+		return
+	}
+	println(buildInfo.GoVersion)
+
+}
+
+func displayUsageInstructions(activeLangs, inactiveLangs []string, showError bool) {
+	if showError {
+		fmt.Println("Error: You must provide both an input folder and an output file.")
+	}
 	fmt.Println("Usage: go run script.go -i <input_folder> -o <output_markdown> [--languages <languages>] [--ignore <ignore_patterns>]")
 	fmt.Printf("By default, these languages are activated: %v\n", activeLangs)
 	fmt.Printf("Supported languages that need to be activated manually: %v\n", inactiveLangs)

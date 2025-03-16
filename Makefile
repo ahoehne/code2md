@@ -11,6 +11,13 @@ goVersion="1.24"
 myUid=1000
 myGid=1000
 
+build:
+	mkdir -p dist && go test ./... && go mod tidy && go build -v -o "dist/${appName}-${GOOS}-${GOARCH}${fileExtension}"
+buildall:
+	go test ./... && ./build-all.sh
+docker-buildall:
+	docker run --rm -it -v "${PWD}":/usr/src/code2md -w /usr/src/code2md "golang:${goVersion}" bash -c "git config --global --add safe.directory /usr/src/code2md && go test ./... && ./build-all.sh && chown -R "${myUid}:${myGid}" dist"
+
 coverage:
 	if [ -d cov ]; then rm -rf cov; fi
 	mkdir -p cov
@@ -19,15 +26,6 @@ coverage:
 
 test:
 	go test ./... -v
-
-build:
-	mkdir -p dist && go test ./... && go mod tidy && go build -v -o "dist/${appName}-${GOOS}-${GOARCH}${fileExtension}"
-
-buildall:
-	go test ./... && ./build-all.sh
-
-docker-buildall:
-	docker run --rm -it -v "${PWD}":/usr/src/code2md -w /usr/src/code2md "golang:${goVersion}" bash -c "git config --global --add safe.directory /usr/src/code2md && go test ./... && ./build-all.sh && chown -R "${myUid}:${myGid}" dist"
 
 install:
 ifeq ($(GOOS),windows)

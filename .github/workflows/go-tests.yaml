@@ -26,6 +26,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
+          cache: false # cache not needed if there is no go.sum file
 
       # not needed without dependencies
       # - name: Install dependencies

@@ -13,8 +13,10 @@ jobs:
     strategy:
       matrix:
         # Ubuntu 22.04 LTS uses go 1.18
-        # Debian 11 uses go 1.19
-        go-version: [1.18, 1.19, 1.24]
+        # Debian 12 (bookworm) uses go 1.19
+        # Ubuntu 24.04 LTS uses go 1.22
+        # Debian 13 (trixie) will be likely using 1.24
+        go-version: [1.18, 1.19, 1.22, 1.24]
     
     steps:
       - name: Checkout repository

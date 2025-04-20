@@ -11,7 +11,7 @@ mkdir -p "$distDir" || exit 100
 
 xFlag=""
 versionNumber=""
-if [[ "$1" == v* ]] ; then
+if [[ "$1" == v* ]]; then
   xFlag="main.VersionNumber=$1"
   versionNumber="$1"
 fi
@@ -32,16 +32,16 @@ build_target() {
   IFS='-' read -r GOOS GOARCH <<< "$target"
   local suffix="${targets[$target]}"
 
-  echo "[$(date +%H:%I:%S)] Building for $GOOS-$GOARCH..."
+  echo "[$(date +%H:%M:%S)] Building for $GOOS-$GOARCH..."
   export GOOS GOARCH
   if [[ $xFlag != "" ]] && go build -ldflags "-X $xFlag" -o "$distDir/${appName}-${GOOS}-${GOARCH}${suffix}"; then
-    echo "[$(date +%H:%I:%S)] Build successful for $GOOS-$GOARCH (Version: $versionNumber)"
+    echo "[$(date +%H:%M:%S)] Build successful for $GOOS-$GOARCH (Version: $versionNumber)"
     return 0
   elif go build -o "$distDir/${appName}-${GOOS}-${GOARCH}${suffix}"; then
-    echo "[$(date +%H:%I:%S)] Build successful for $GOOS-$GOARCH"
+    echo "[$(date +%H:%M:%S)] Build successful for $GOOS-$GOARCH"
     return 0
   else
-    echo "[$(date +%H:%I:%S)] Build failed for $GOOS-$GOARCH" >&2
+    echo "[$(date +%H:%M:%S)] Build failed for $GOOS-$GOARCH" >&2
     return 200
   fi
 }
@@ -71,6 +71,6 @@ if [ "$returnStatus" -gt "0" ]; then
   exit "$returnStatus"
 fi
 
-# generate checksums
+# Generate checksums
 echo "Generating Checksums"
 cd dist && sha256sum -- * > CHECKSUMS.txt && cd .. && echo "Checksums generated" && exit 0

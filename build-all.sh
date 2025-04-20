@@ -71,6 +71,5 @@ if [ "$returnStatus" -gt "0" ]; then
   exit "$returnStatus"
 fi
 
-# Generate checksums
 echo "Generating Checksums"
 cd dist && sha256sum -- * > CHECKSUMS.txt && cd .. && echo "Checksums generated" && exit 0

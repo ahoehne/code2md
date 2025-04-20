@@ -37,15 +37,16 @@ func main() {
 
 func displayVersion() {
 	buildInfo, ok := debug.ReadBuildInfo()
+	if !ok && buildInfo.GoVersion == "" {
+		println("error determining go version")
+		return
+	}
 	if ok && VersionNumber == "" {
+		fmt.Println("code2md development-version")
 		fmt.Print(buildInfo)
 		return
 	}
 	fmt.Printf("code2md %s\n", VersionNumber)
-	if !ok && buildInfo.GoVersion == "" {
-		println("error determing go version")
-		return
-	}
 	println(buildInfo.GoVersion)
 
 }

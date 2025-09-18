@@ -77,17 +77,15 @@ func TestUpdateLanguagesFilter(t *testing.T) {
 		".yml":  false,
 	}
 
-	if !reflect.DeepEqual(AllowedLanguages, expected) {
-		t.Errorf("updateLanguagesFilter() = %v; want %v", AllowedLanguages, expected)
+	if !reflect.DeepEqual(GetAllowedLanguages(), expected) {
+		t.Errorf("updateLanguagesFilter() = %v; want %v", GetAllowedLanguages(), expected)
 	}
 }
 
 func TestFetchAllowedFileNames(t *testing.T) {
-	AllowedLanguages[".go"] = true
-	AllowedLanguages[".php"] = true
-	AllowedLanguages[".js"] = true
+	updateLanguagesFilter(".go,.php,.js")
 
-	allowedFileNames := fetchAllowedFileNames(AllowedLanguages)
+	allowedFileNames := fetchAllowedFileNames(GetAllowedLanguages())
 	expected := map[string]bool{
 		"go.mod":        true,
 		"composer.json": true,

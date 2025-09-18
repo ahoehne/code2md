@@ -22,17 +22,29 @@ func main() {
 		return
 	}
 
+	if err := run(config); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run(config c2mConfig.Config) error {
 	outputFile, err := os.Create(config.OutputMarkdown)
 	if err != nil {
-		fmt.Printf("Error creating output file: %v\n", err)
-		return
+		return fmt.Errorf("creating output file %s: %w", config.OutputMarkdown, err)
 	}
-	defer outputFile.Close()
+	defer func() {
+		if closeErr := outputFile.Close(); closeErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close output file: %v\n", closeErr)
+		}
+	}()
 
-	err = processDirectory(config.InputFolder, outputFile, config.IgnorePatterns, c2mConfig.AllowedLanguages, config.AllowedFileNames)
-	if err != nil {
-		fmt.Printf("Error walking through the directory: %v\n", err)
+	if err := processDirectory(config.InputFolder, outputFile, config.IgnorePatterns,
+	c2mConfig.GetAllowedLanguages(), config.AllowedFileNames); err != nil {
+		return fmt.Errorf("processing directory %s: %w", config.InputFolder, err)
 	}
+
+	return nil
 }
 
 func displayVersion() {

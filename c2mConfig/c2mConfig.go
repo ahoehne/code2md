@@ -23,7 +23,7 @@ type Config struct {
 	Version          bool
 }
 
-var AllowedLanguages = map[string]bool{
+var allowedLanguages = map[string]bool{
 	".php":  true,
 	".go":   true,
 	".js":   true,
@@ -58,11 +58,19 @@ func InitializeConfigFromFlags() Config {
 	return Config{
 		InputFolder:      *inputFolder,
 		OutputMarkdown:   *outputMarkdown,
-		AllowedFileNames: fetchAllowedFileNames(AllowedLanguages),
+		AllowedFileNames: fetchAllowedFileNames(allowedLanguages),
 		IgnorePatterns:   ignorePatternsList,
 		Help:             *help,
 		Version:          *v,
 	}
+}
+
+func GetAllowedLanguages() map[string]bool {
+    result := make(map[string]bool)
+    for k, v := range allowedLanguages {
+        result[k] = v
+    }
+    return result
 }
 
 func IsConfigValid(config Config) bool {
@@ -71,20 +79,20 @@ func IsConfigValid(config Config) bool {
 
 func updateLanguagesFilter(languages string) {
 	selectedLanguages := strings.Split(languages, ",")
-	for ext := range AllowedLanguages {
-		AllowedLanguages[ext] = sliceContains(selectedLanguages, ext)
+	for ext := range allowedLanguages {
+		allowedLanguages[ext] = sliceContains(selectedLanguages, ext)
 	}
 }
 
-func fetchAllowedFileNames(AllowedLanguages map[string]bool) map[string]bool {
+func fetchAllowedFileNames(allowedLanguages map[string]bool) map[string]bool {
 	allowedFileNames := make(map[string]bool)
-	if AllowedLanguages[".go"] {
+	if allowedLanguages[".go"] {
 		allowedFileNames["go.mod"] = true
 	}
-	if AllowedLanguages[".php"] {
+	if allowedLanguages[".php"] {
 		allowedFileNames["composer.json"] = true
 	}
-	if AllowedLanguages[".js"] {
+	if allowedLanguages[".js"] {
 		allowedFileNames["package.json"] = true
 	}
 	return allowedFileNames
@@ -135,7 +143,7 @@ func LoadGitignorePatterns(path string) ([]string, error) {
 
 func GetActiveLanguages() []string {
 	var active []string
-	for lang, v := range AllowedLanguages {
+	for lang, v := range allowedLanguages {
 		if v {
 			active = append(active, strings.TrimPrefix(lang, "."))
 		}
@@ -145,7 +153,7 @@ func GetActiveLanguages() []string {
 
 func GetInactiveLanguages() []string {
 	var inactive []string
-	for lang, v := range AllowedLanguages {
+	for lang, v := range allowedLanguages {
 		if !v {
 			inactive = append(inactive, strings.TrimPrefix(lang, "."))
 		}

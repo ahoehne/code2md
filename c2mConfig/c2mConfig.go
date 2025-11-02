@@ -66,11 +66,11 @@ func InitializeConfigFromFlags() Config {
 }
 
 func GetAllowedLanguages() map[string]bool {
-    result := make(map[string]bool)
-    for k, v := range allowedLanguages {
-        result[k] = v
-    }
-    return result
+	result := make(map[string]bool)
+	for k, v := range allowedLanguages {
+		result[k] = v
+	}
+	return result
 }
 
 func IsConfigValid(config Config) bool {

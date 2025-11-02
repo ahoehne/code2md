@@ -16,7 +16,8 @@ jobs:
         # Debian 12 (bookworm) uses go 1.19
         # Ubuntu 24.04 LTS uses go 1.22
         # Debian 13 (trixie) uses 1.24
-        go-version: [1.18, 1.19, 1.22, 1.24]
+        # Build uses 1.25
+        go-version: [1.18, 1.19, 1.22, 1.24, 1.25]
 
     steps:
       - name: Checkout repository

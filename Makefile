@@ -6,7 +6,7 @@ ifeq ($(GOOS),windows)
 else
 	fileExtension=""
 endif
-goVersion="1.24"
+goVersion="1.25"
 
 myUid=1000
 myGid=1000

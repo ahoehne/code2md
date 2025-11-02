@@ -18,7 +18,7 @@ func TestGetActiveLanguages(t *testing.T) {
 
 func TestGetInactiveLanguages(t *testing.T) {
 	inactive := GetInactiveLanguages()
-	expected := 3
+	expected := 6
 
 	if len(inactive) != expected {
 		t.Errorf("GetInactiveLanguages() = %v (count: %d); want %d", inactive, len(inactive), expected)
@@ -72,6 +72,9 @@ func TestUpdateLanguagesFilter(t *testing.T) {
 		".ts":   false,
 		".py":   false,
 		".sh":   false,
+		".html": false,
+		".scss": false,
+		".css":  false,
 		".json": false,
 		".yaml": false,
 		".yml":  false,

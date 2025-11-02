@@ -30,6 +30,9 @@ var allowedLanguages = map[string]bool{
 	".ts":   true,
 	".py":   true,
 	".sh":   true,
+	".html": false,
+	".scss": false,
+	".css":  false,
 	".json": false,
 	".yaml": false,
 	".yml":  false,
@@ -109,6 +112,11 @@ func sliceContains(slice []string, item string) bool {
 
 func parseIgnorePatterns(patterns string) []string {
 	ignorePatternsList := strings.Split(patterns, ",")
+	if allowedLanguages[".css"] {
+		ignorePatternsList = append(ignorePatternsList, "*.min.css")
+	} else if allowedLanguages[".scss"] {
+		ignorePatternsList = append(ignorePatternsList, "*.css")
+	}
 	if len(ignorePatternsList) == 1 && ignorePatternsList[0] == "" {
 		return []string{}
 	}

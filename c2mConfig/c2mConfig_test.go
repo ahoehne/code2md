@@ -87,16 +87,26 @@ func TestUpdateLanguagesFilter(t *testing.T) {
 
 func TestFetchAllowedFileNames(t *testing.T) {
 	updateLanguagesFilter(".go,.php,.js")
-
 	allowedFileNames := fetchAllowedFileNames(GetAllowedLanguages())
 	expected := map[string]bool{
 		"go.mod":        true,
 		"composer.json": true,
 		"package.json":  true,
 	}
-
 	if !reflect.DeepEqual(allowedFileNames, expected) {
 		t.Errorf("fetchAllowedFileNames() = %v; want %v", allowedFileNames, expected)
+	}
+
+}
+func TestFetchAllowedFileNamesCapitalLetters(t *testing.T) {
+	updateLanguagesFilter("GO,PHP")
+	allowedFileNames := fetchAllowedFileNames(GetAllowedLanguages())
+	expected := map[string]bool{
+		"go.mod":        true,
+		"composer.json": true,
+	}
+	if !reflect.DeepEqual(allowedFileNames, expected) {
+		t.Errorf("fetchAllowedFileNames (Capital Letters): %v; want %v", allowedFileNames, expected)
 	}
 }
 

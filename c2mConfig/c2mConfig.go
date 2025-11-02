@@ -82,6 +82,13 @@ func IsConfigValid(config Config) bool {
 
 func updateLanguagesFilter(languages string) {
 	selectedLanguages := strings.Split(languages, ",")
+	for langKey, langVal := range selectedLanguages {
+		if !strings.HasPrefix(langVal, ".") {
+			langVal = "." + langVal
+			selectedLanguages[langKey] = "." + langVal
+		}
+		selectedLanguages[langKey] = strings.ToLower(langVal)
+	}
 	for ext := range allowedLanguages {
 		allowedLanguages[ext] = sliceContains(selectedLanguages, ext)
 	}

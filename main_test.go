@@ -25,6 +25,10 @@ func TestPathPatternMatching(t *testing.T) {
 		{"file.with.multiple.dots.tar.gz", "*.tar.gz", true},
 		{"file.with.multiple.dots.tar.gz", "*.gz", true},
 		{"file.with.multiple.dots.tar.gz", "*.tar.*", true},
+		{"style.min.css", "**.min.css", true},
+		{"nested/style.min.css", "**.min.css", true},
+		{"a/b/c/d/main.min.css", "**.min.css", true},
+		{"style.css", "**.min.css", false},
 	}
 
 	for _, tt := range tests {

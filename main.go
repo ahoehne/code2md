@@ -127,6 +127,27 @@ func doesPathMatchPattern(path, pattern string) bool {
 	if strings.HasPrefix(pattern, "/") && strings.HasSuffix(pattern, "/") {
 		return strings.HasPrefix(path, strings.TrimPrefix(pattern, "/"))
 	}
+	if strings.HasPrefix(pattern, "**") {
+		// Handle globstar matching for the start of the pattern (e.g., **.min.css)
+		// TODO: check out https://github.com/bmatcuk/doublestar
+		subPattern := strings.TrimPrefix(pattern, "**/")
+		if subPattern == pattern {
+			subPattern = strings.TrimPrefix(pattern, "**")
+			_, fileName := filepath.Split(path)
+			matched, _ := filepath.Match("*"+subPattern, fileName)
+			return matched
+		}
+
+		parts := strings.Split(path, string(filepath.Separator))
+		for i := 0; i < len(parts); i++ {
+			remainingPath := strings.Join(parts[i:], string(filepath.Separator))
+			matched, _ := filepath.Match(subPattern, remainingPath)
+			if matched {
+				return true
+			}
+		}
+		return false
+	}
 	if strings.Contains(pattern, "*") {
 		matched, _ := filepath.Match(pattern, path)
 		return matched

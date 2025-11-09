@@ -67,7 +67,7 @@ func displayUsageInstructions(activeLangs, inactiveLangs []string, showError boo
 	if showError {
 		fmt.Println("Error: You must provide both an input folder and an output file.")
 	}
-	fmt.Println("Usage: go run script.go -i <input_folder> -o <output_markdown> [--languages <languages>] [--ignore <ignore_patterns>]")
+	fmt.Println("Usage: code2md -i <input_folder> -o <output_markdown> [--languages <languages>] [--ignore <ignore_patterns>]")
 	fmt.Printf("By default, these languages are activated: %v\n", activeLangs)
 	fmt.Printf("Supported languages that need to be activated manually: %v\n", inactiveLangs)
 }

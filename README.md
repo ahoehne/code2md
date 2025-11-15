@@ -33,6 +33,7 @@ For the easiest installation, download a pre-built binary.
       ```sh
       chmod +x code2md
       sudo mv code2md /usr/local/bin/
+      sudo chown root:root /usr/local/bin/code2md
       ```
 
 ### From Source

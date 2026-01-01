@@ -85,10 +85,14 @@ code2md -i . -o code.md
 
 ### Command-Line Flags
 
-- `-i, --input`: Input folder to scan (required).
-- `-o, --output`: Output Markdown file (required).
-- `-l, --languages`: Comma-separated list of allowed languages (default: `.php,.go,.js,.ts,.py,.sh`).
-- `-I, --ignore`: Comma-separated list of files and/or search patterns to ignore (default: `*.yaml,*.yml`).
+| Flag          | Short | Description                                                     |
+| ------------- | ----- | --------------------------------------------------------------- |
+| `--input`     | `-i`  | Input directory to scan (required)                              |
+| `--output`    | `-o`  | Output Markdown file (optional, defaults to stdout)             |
+| `--languages` | `-l`  | Comma-separated list of allowed languages (extensions or names) |
+| `--ignore`    | `-I`  | Comma-separated ignore patterns                                 |
+| `--help`      | `-h`  | Show help                                                       |
+| `--version`   | `-v`  | Show version information                                        |
 
 ## Hint: getting the generated file into clipboard
 These commands copy the contents of `code.md` into the clipboard.

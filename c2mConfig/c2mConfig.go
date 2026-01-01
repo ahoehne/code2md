@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	defaultAllowedLanguages = ".php,.go,.js,.ts,.py,.sh"
-	defaultIgnoredPatterns  = "*.yaml,*.yml"
+	defaultAllowedLanguages = ".php,.go,.js,.ts,.py,.sh,.java"
+	defaultIgnoredPatterns  = "*.yaml,*.yml,*.xml"
 )
 
 type Config struct {
@@ -30,6 +30,7 @@ var allowedLanguages = map[string]bool{
 	".ts":   true,
 	".py":   true,
 	".sh":   true,
+	".java": true,
 	".md":   false,
 	".html": false,
 	".scss": false,
@@ -37,6 +38,7 @@ var allowedLanguages = map[string]bool{
 	".json": false,
 	".yaml": false,
 	".yml":  false,
+	".xml":  false,
 }
 
 func InitializeConfigFromFlags() Config {
@@ -68,7 +70,7 @@ func InitializeConfigFromFlags() Config {
 	return Config{
 		InputFolder:      *inputFolder,
 		OutputMarkdown:   *outputMarkdown,
-		AllowedFileNames: fetchAllowedFileNames(allowedLanguages),
+		AllowedFileNames: GetAllowedFileNames(allowedLanguages),
 		IgnorePatterns:   ignorePatternsList,
 		Help:             *help,
 		Version:          *v,
@@ -101,7 +103,7 @@ func updateLanguagesFilter(languages string) {
 	}
 }
 
-func fetchAllowedFileNames(allowedLanguages map[string]bool) map[string]bool {
+func GetAllowedFileNames(allowedLanguages map[string]bool) map[string]bool {
 	allowedFileNames := make(map[string]bool)
 	if allowedLanguages[".go"] {
 		allowedFileNames["go.mod"] = true
@@ -111,6 +113,9 @@ func fetchAllowedFileNames(allowedLanguages map[string]bool) map[string]bool {
 	}
 	if allowedLanguages[".js"] {
 		allowedFileNames["package.json"] = true
+	}
+	if allowedLanguages[".java"] {
+		allowedFileNames["pom.xml"] = true
 	}
 	return allowedFileNames
 }

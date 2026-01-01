@@ -9,7 +9,7 @@ import (
 
 func TestGetActiveLanguages(t *testing.T) {
 	active := GetActiveLanguages()
-	expected := 6
+	expected := 7
 
 	if len(active) != expected {
 		t.Errorf("GetActiveLanguages() = %v (count: %d); want %d", active, len(active), expected)
@@ -18,7 +18,7 @@ func TestGetActiveLanguages(t *testing.T) {
 
 func TestGetInactiveLanguages(t *testing.T) {
 	inactive := GetInactiveLanguages()
-	expected := 7
+	expected := 8
 
 	if len(inactive) != expected {
 		t.Errorf("GetInactiveLanguages() = %v (count: %d); want %d", inactive, len(inactive), expected)
@@ -69,6 +69,7 @@ func TestUpdateLanguagesFilter(t *testing.T) {
 		".php":  false,
 		".go":   true,
 		".js":   true,
+		".java": false,
 		".md":   false,
 		".ts":   false,
 		".py":   false,
@@ -79,6 +80,7 @@ func TestUpdateLanguagesFilter(t *testing.T) {
 		".json": false,
 		".yaml": false,
 		".yml":  false,
+		".xml":  false,
 	}
 
 	if !reflect.DeepEqual(GetAllowedLanguages(), expected) {
@@ -87,12 +89,13 @@ func TestUpdateLanguagesFilter(t *testing.T) {
 }
 
 func TestFetchAllowedFileNames(t *testing.T) {
-	updateLanguagesFilter(".go,.php,.js")
-	allowedFileNames := fetchAllowedFileNames(GetAllowedLanguages())
+	updateLanguagesFilter(".go,.php,.js,.java")
+	allowedFileNames := GetAllowedFileNames(GetAllowedLanguages())
 	expected := map[string]bool{
 		"go.mod":        true,
 		"composer.json": true,
 		"package.json":  true,
+		"pom.xml":       true,
 	}
 	if !reflect.DeepEqual(allowedFileNames, expected) {
 		t.Errorf("fetchAllowedFileNames() = %v; want %v", allowedFileNames, expected)
@@ -101,7 +104,7 @@ func TestFetchAllowedFileNames(t *testing.T) {
 }
 func TestFetchAllowedFileNamesCapitalLetters(t *testing.T) {
 	updateLanguagesFilter("GO,PHP")
-	allowedFileNames := fetchAllowedFileNames(GetAllowedLanguages())
+	allowedFileNames := GetAllowedFileNames(GetAllowedLanguages())
 	expected := map[string]bool{
 		"go.mod":        true,
 		"composer.json": true,

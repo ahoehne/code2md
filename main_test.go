@@ -1,6 +1,7 @@
 package main
 
 import (
+	"code2md/c2mConfig"
 	"testing"
 )
 
@@ -63,14 +64,15 @@ func TestPathIgnoring(t *testing.T) {
 
 func TestIsFileAllowed(t *testing.T) {
 	allowedLanguages := map[string]bool{
-		".php": true,
-		".go":  true,
-		".js":  true,
-		".ts":  true,
+		".php":  true,
+		".go":   true,
+		".js":   true,
+		".ts":   true,
+		".java": true,
+		".json": false,
 	}
-	allowedFileNames := map[string]bool{
-		"go.mod": true,
-	}
+
+	allowedFileNames := c2mConfig.GetAllowedFileNames(allowedLanguages)
 
 	tests := []struct {
 		filename string
@@ -80,10 +82,12 @@ func TestIsFileAllowed(t *testing.T) {
 		{"file.go", true},
 		{"file.js", true},
 		{"file.ts", true},
-		{"file.java", false},
+		{"file.java", true},
+		{"File.java", true},
+		{"pom.xml", true},
 		{"file.txt", false},
 		{"go.mod", true},
-		{"composer.json", false},
+		{"composer.json", true},
 		{"file.with.multiple.dots.js", true},
 		{"file_without_extension", false},
 		{"file.with.multiple.dots.php", true},

@@ -33,16 +33,15 @@ func run(config c2mConfig.Config) error {
 	var err error
 	outputWriter := os.Stdout
 	if config.OutputMarkdown != "" {
-		file, err := os.Create(config.OutputMarkdown)
+		outputWriter, err = os.Create(config.OutputMarkdown)
 		if err != nil {
 			return fmt.Errorf("creating output file %s: %w", config.OutputMarkdown, err)
 		}
 		defer func() {
-			if closeErr := file.Close(); closeErr != nil {
+			if closeErr := outputWriter.Close(); closeErr != nil {
 				fmt.Fprintf(os.Stderr, "Warning: failed to close output file: %v\n", closeErr)
 			}
 		}()
-		outputWriter = file
 	}
 
 	err = processDirectory(config.InputFolder, outputWriter, config.IgnorePatterns, c2mConfig.GetAllowedLanguages(), config.AllowedFileNames)

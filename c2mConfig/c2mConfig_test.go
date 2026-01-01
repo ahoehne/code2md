@@ -52,7 +52,7 @@ func TestIsConfigValid(t *testing.T) {
 	}{
 		{Config{InputFolder: "input", OutputMarkdown: "output"}, true},
 		{Config{InputFolder: "", OutputMarkdown: "output"}, false},
-		{Config{InputFolder: "input", OutputMarkdown: ""}, false},
+		{Config{InputFolder: "input", OutputMarkdown: ""}, true},
 		{Config{InputFolder: "", OutputMarkdown: ""}, false},
 	}
 

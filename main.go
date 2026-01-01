@@ -30,17 +30,22 @@ func main() {
 }
 
 func run(config c2mConfig.Config) error {
-	outputFile, err := os.Create(config.OutputMarkdown)
-	if err != nil {
-		return fmt.Errorf("creating output file %s: %w", config.OutputMarkdown, err)
-	}
-	defer func() {
-		if closeErr := outputFile.Close(); closeErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to close output file: %v\n", closeErr)
+	var err error
+	outputWriter := os.Stdout
+	if config.OutputMarkdown != "" {
+		file, err := os.Create(config.OutputMarkdown)
+		if err != nil {
+			return fmt.Errorf("creating output file %s: %w", config.OutputMarkdown, err)
 		}
-	}()
+		defer func() {
+			if closeErr := file.Close(); closeErr != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to close output file: %v\n", closeErr)
+			}
+		}()
+		outputWriter = file
+	}
 
-	err = processDirectory(config.InputFolder, outputFile, config.IgnorePatterns, c2mConfig.GetAllowedLanguages(), config.AllowedFileNames)
+	err = processDirectory(config.InputFolder, outputWriter, config.IgnorePatterns, c2mConfig.GetAllowedLanguages(), config.AllowedFileNames)
 	if err != nil {
 		return fmt.Errorf("processing directory %s: %w", config.InputFolder, err)
 	}
@@ -66,7 +71,7 @@ func displayVersion() {
 
 func displayUsageInstructions(activeLangs, inactiveLangs []string, showError bool) {
 	if showError {
-		fmt.Println("Error: You must provide both an input folder and an output file.")
+		fmt.Println("Error: You have to provide an input folder.")
 	}
 	fmt.Println("Usage: code2md -i <input_folder> -o <output_markdown> [--languages <languages>] [--ignore <ignore_patterns>]")
 	fmt.Printf("By default, these languages are activated: %v\n", activeLangs)

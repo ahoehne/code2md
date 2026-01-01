@@ -84,7 +84,7 @@ func GetAllowedLanguages() map[string]bool {
 }
 
 func IsConfigValid(config Config) bool {
-	return config.InputFolder != "" && config.OutputMarkdown != ""
+	return config.InputFolder != ""
 }
 
 func updateLanguagesFilter(languages string) {

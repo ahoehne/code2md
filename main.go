@@ -39,7 +39,7 @@ func run(config c2mConfig.Config) error {
 		}
 	}()
 
-	err = processDirectory(config.InputFolder, outputFile, config.IgnorePatterns, c2mConfig.GetAllowedLanguages(), config.AllowedFileNames);
+	err = processDirectory(config.InputFolder, outputFile, config.IgnorePatterns, c2mConfig.GetAllowedLanguages(), config.AllowedFileNames)
 	if err != nil {
 		return fmt.Errorf("processing directory %s: %w", config.InputFolder, err)
 	}

@@ -23,7 +23,7 @@ For the easiest installation, download a pre-built binary.
 
 - **Linux/Mac:**
    1. Rename the binary based on your architecture:
-      ```sh 
+      ```sh
       mv code2md-linux-amd64 code2md    # For Linux AMD64
       mv code2md-linux-arm64 code2md    # For Linux ARM64
       mv code2md-darwin-amd64 code2md   # For macOS AMD64

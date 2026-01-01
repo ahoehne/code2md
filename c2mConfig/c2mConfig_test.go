@@ -11,14 +11,14 @@ func TestGetActiveLanguages(t *testing.T) {
 	active := GetActiveLanguages()
 	expected := 6
 
-	if len(active) != 6 {
+	if len(active) != expected {
 		t.Errorf("GetActiveLanguages() = %v (count: %d); want %d", active, len(active), expected)
 	}
 }
 
 func TestGetInactiveLanguages(t *testing.T) {
 	inactive := GetInactiveLanguages()
-	expected := 6
+	expected := 7
 
 	if len(inactive) != expected {
 		t.Errorf("GetInactiveLanguages() = %v (count: %d); want %d", inactive, len(inactive), expected)
@@ -69,6 +69,7 @@ func TestUpdateLanguagesFilter(t *testing.T) {
 		".php":  false,
 		".go":   true,
 		".js":   true,
+		".md":   false,
 		".ts":   false,
 		".py":   false,
 		".sh":   false,

@@ -2,6 +2,7 @@ package main
 
 import (
 	"code2md/c2mConfig"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -76,7 +77,8 @@ func processDirectory(inputFolder string, outputFile *os.File, patterns []string
 	specialFileLanguages := map[string]string{
 		"go.mod": "go",
 	}
-	return filepath.WalkDir(inputFolder, func(path string, d os.DirEntry, err error) error {
+	processed := 0
+	ret := filepath.WalkDir(inputFolder, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -91,21 +93,43 @@ func processDirectory(inputFolder string, outputFile *os.File, patterns []string
 			return nil
 		}
 		if !d.IsDir() && isFileAllowed(d.Name(), allowedLanguages, allowedFileNames) {
+			processed++
 			return writeMarkdown(path, outputFile, getMdLang(d.Name(), allowedFileNames, specialFileLanguages))
 		}
 		return nil
 	})
+	if processed == 0 {
+		return errors.New("file list is empty")
+	}
+	return ret
 }
 
 func writeMarkdown(path string, outputFile *os.File, lang string) error {
+	prefix := ""
+	suffix := ""
+	if lang != "md" {
+		prefix = "```" + lang + "\n"
+		suffix = "\n```"
+	}
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
-	title := fmt.Sprintf("# %s\n\n```%s\n", path, lang)
-	outputFile.WriteString(title)
-	outputFile.Write(content)
-	outputFile.WriteString("\n```\n\n")
+
+	if _, err = outputFile.WriteString("# " + path + "\n\n"); err != nil {
+		return err
+	}
+	if _, err = outputFile.WriteString(prefix); err != nil {
+		return err
+	}
+	if _, err = outputFile.Write(content); err != nil {
+		return err
+	}
+	if _, err = outputFile.WriteString(suffix); err != nil {
+		return err
+	}
+	outputFile.WriteString("\n\n")
+
 	return nil
 }
 

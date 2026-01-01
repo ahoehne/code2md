@@ -30,6 +30,7 @@ var allowedLanguages = map[string]bool{
 	".ts":   true,
 	".py":   true,
 	".sh":   true,
+	".md":   false,
 	".html": false,
 	".scss": false,
 	".css":  false,

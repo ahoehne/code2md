@@ -105,10 +105,10 @@ func processDirectory(inputFolder string, outputFile *os.File, patterns []string
 }
 
 func writeMarkdown(path string, outputFile *os.File, lang string) error {
-	prefix := "# " + path + "\n\n"
+	prefix := ""
 	suffix := ""
 	if lang != "md" {
-		prefix += "```" + lang + "\n"
+		prefix = "```" + lang + "\n"
 		suffix = "\n```"
 	}
 	content, err := os.ReadFile(path)
@@ -116,16 +116,15 @@ func writeMarkdown(path string, outputFile *os.File, lang string) error {
 		return err
 	}
 
-	if _, err = outputFile.WriteString(prefix); err != nil {
+	if _, err = outputFile.WriteString("# " + path + "\n\n" + prefix); err != nil {
 		return err
 	}
 	if _, err = outputFile.Write(content); err != nil {
 		return err
 	}
-	if _, err = outputFile.WriteString(suffix); err != nil {
+	if _, err = outputFile.WriteString(suffix + "\n\n"); err != nil {
 		return err
 	}
-	outputFile.WriteString("\n\n")
 
 	return nil
 }

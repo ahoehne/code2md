@@ -37,7 +37,7 @@ func TestInitializeConfigFromFlags(t *testing.T) {
 			"go.mod":       true,
 			"package.json": true,
 		},
-		IgnorePatterns: []string{".txt", ".log"},
+		IgnorePatterns: []string{".txt", ".log", "test_output"},
 	}
 
 	if !reflect.DeepEqual(config, expectedConfig) {

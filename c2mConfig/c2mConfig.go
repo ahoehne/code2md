@@ -57,6 +57,12 @@ func InitializeConfigFromFlags() Config {
 	flag.Parse()
 
 	updateLanguagesFilter(*languages)
+	if *ignorePatterns == "" {
+		*ignorePatterns = *outputMarkdown
+	} else {
+		*ignorePatterns += "," + *outputMarkdown
+	}
+
 	ignorePatternsList := parseIgnorePatterns(*ignorePatterns)
 
 	return Config{

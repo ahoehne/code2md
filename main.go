@@ -73,6 +73,16 @@ func displayUsageInstructions(activeLangs, inactiveLangs []string, showError boo
 		fmt.Println("Error: You have to provide an input folder.")
 	}
 	fmt.Println("Usage: code2md -i <input_folder> -o <output_markdown> [--languages <languages>] [--ignore <ignore_patterns>]")
+	fmt.Println("| ------------- | ----- | --------------------------------------------------------------- |")
+	fmt.Println("| Flag          | Short | Description                                                     |")
+	fmt.Println("| ------------- | ----- | --------------------------------------------------------------- |")
+	fmt.Println("| `--input`     | `-i`  | Input directory to scan (required)                              |")
+	fmt.Println("| `--output`    | `-o`  | Output Markdown file (optional, defaults to stdout)             |")
+	fmt.Println("| `--languages` | `-l`  | Comma-separated list of allowed languages (extensions or names) |")
+	fmt.Println("| `--ignore`    | `-I`  | Comma-separated ignore patterns                                 |")
+	fmt.Println("| `--help`      | `-h`  | Show help                                                       |")
+	fmt.Println("| `--version`   | `-v`  | Show version information                                        |")
+	fmt.Println("| ------------- | ----- | --------------------------------------------------------------- |")
 	fmt.Printf("By default, these languages are activated: %v\n", activeLangs)
 	fmt.Printf("Supported languages that need to be activated manually: %v\n", inactiveLangs)
 }

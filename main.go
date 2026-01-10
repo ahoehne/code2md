@@ -2,8 +2,10 @@ package main
 
 import (
 	"code2md/c2mConfig"
+	"code2md/patternMatcher"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -13,13 +15,19 @@ import (
 var VersionNumber string
 
 func main() {
-	config := c2mConfig.InitializeConfigFromFlags()
+	config, err := c2mConfig.InitializeConfigFromFlags()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing config: %v\n", err)
+		os.Exit(1)
+	}
+
 	if config.Version {
 		displayVersion()
 		return
 	}
+
 	if !c2mConfig.IsConfigValid(config) || config.Help {
-		displayUsageInstructions(c2mConfig.GetActiveLanguages(), c2mConfig.GetInactiveLanguages(), !config.Help)
+		displayUsageInstructions(config, !config.Help)
 		return
 	}
 
@@ -29,10 +37,18 @@ func main() {
 	}
 }
 
-func run(config c2mConfig.Config) error {
+func run(config *c2mConfig.Config) error {
 	var err error
 	outputWriter := os.Stdout
+
 	if config.OutputMarkdown != "" {
+		outputDir := filepath.Dir(config.OutputMarkdown)
+		if outputDir != "." && outputDir != "" {
+			if err := os.MkdirAll(outputDir, 0755); err != nil {
+				return fmt.Errorf("creating output directory: %w", err)
+			}
+		}
+
 		outputWriter, err = os.Create(config.OutputMarkdown)
 		if err != nil {
 			return fmt.Errorf("creating output file %s: %w", config.OutputMarkdown, err)
@@ -44,7 +60,9 @@ func run(config c2mConfig.Config) error {
 		}()
 	}
 
-	err = processDirectory(config.InputFolder, outputWriter, config.IgnorePatterns, c2mConfig.GetAllowedLanguages(), config.AllowedFileNames)
+	compiledPatterns := patternMatcher.CompilePatterns(config.IgnorePatterns)
+
+	err = processDirectory(config.InputFolder, outputWriter, compiledPatterns, config.AllowedLanguages, config.AllowedFileNames, config.MaxFileSize)
 	if err != nil {
 		return fmt.Errorf("processing directory %s: %w", config.InputFolder, err)
 	}
@@ -54,88 +72,132 @@ func run(config c2mConfig.Config) error {
 
 func displayVersion() {
 	buildInfo, ok := debug.ReadBuildInfo()
-	if !ok && buildInfo.GoVersion == "" {
-		println("error determining go version")
+	if !ok || buildInfo.GoVersion == "" {
+		fmt.Println("Error determining Go version")
 		return
 	}
-	if ok && VersionNumber == "" {
-		fmt.Println("code2md development-version")
-		fmt.Print(buildInfo)
-		return
-	}
-	fmt.Printf("code2md %s\n", VersionNumber)
-	println(buildInfo.GoVersion)
 
+	if VersionNumber == "" {
+		fmt.Println("code2md development-version")
+		fmt.Println(buildInfo.GoVersion)
+		return
+	}
+
+	fmt.Printf("code2md %s\n", VersionNumber)
+	fmt.Println(buildInfo.GoVersion)
 }
 
-func displayUsageInstructions(activeLangs, inactiveLangs []string, showError bool) {
+func displayUsageInstructions(config *c2mConfig.Config, showError bool) {
 	if showError {
 		fmt.Println("Error: You have to provide an input folder.")
 	}
 	fmt.Println("Usage: code2md -i <input_folder> -o <output_markdown> [--languages <languages>] [--ignore <ignore_patterns>]")
-	fmt.Println("| Flag          | Short | Description                                                     |")
-	fmt.Println("| ------------- | ----- | --------------------------------------------------------------- |")
-	fmt.Println("| `--input`     | `-i`  | Input directory to scan (required)                              |")
-	fmt.Println("| `--output`    | `-o`  | Output Markdown file (optional, defaults to stdout)             |")
-	fmt.Println("| `--languages` | `-l`  | Comma-separated list of allowed languages (extensions or names) |")
-	fmt.Println("| `--ignore`    | `-I`  | Comma-separated ignore patterns                                 |")
-	fmt.Println("| `--help`      | `-h`  | Show help                                                       |")
-	fmt.Println("| `--version`   | `-v`  | Show version information                                        |")
-	fmt.Printf("By default, these languages are activated: %v\n", activeLangs)
-	fmt.Printf("Supported languages that need to be activated manually: %v\n", inactiveLangs)
+	fmt.Println("| Flag              | Short | Description                                                     |")
+	fmt.Println("| ----------------- | ----- | --------------------------------------------------------------- |")
+	fmt.Println("| `--input`         | `-i`  | Input directory to scan (required)                              |")
+	fmt.Println("| `--output`        | `-o`  | Output Markdown file (optional, defaults to stdout)             |")
+	fmt.Println("| `--languages`     | `-l`  | Comma-separated list of allowed languages (extensions or names) |")
+	fmt.Println("| `--ignore`        | `-I`  | Comma-separated ignore patterns                                 |")
+	fmt.Println("| `--max-file-size` | `-m`  | Maximum file size in bytes (default: 100MB)                     |")
+	fmt.Println("| `--help`          | `-h`  | Show help                                                       |")
+	fmt.Println("| `--version`       | `-v`  | Show version information                                        |")
+
+	if config != nil {
+		activeLangs := c2mConfig.GetActiveLanguages(config)
+		inactiveLangs := c2mConfig.GetInactiveLanguages(config)
+		fmt.Printf("By default, these languages are activated: %v\n", activeLangs)
+		fmt.Printf("Supported languages that need to be activated manually: %v\n", inactiveLangs)
+	}
 }
 
-func processDirectory(inputFolder string, outputFile *os.File, patterns []string, allowedLanguages, allowedFileNames map[string]bool) error {
+func processDirectory(inputFolder string, outputFile *os.File, patterns []patternMatcher.CompiledPattern, allowedLanguages, allowedFileNames map[string]bool, maxFileSize int64) error {
 	specialFileLanguages := map[string]string{
 		"go.mod": "go",
 	}
 	processed := 0
+
 	ret := filepath.WalkDir(inputFolder, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			return err
+			if os.IsPermission(err) {
+				fmt.Fprintf(os.Stderr, "Warning: permission denied: %s\n", path)
+				return nil
+			}
+			return fmt.Errorf("accessing path %s: %w", path, err)
 		}
+
 		relPath, err := filepath.Rel(inputFolder, path)
 		if err != nil {
-			return err
+			return fmt.Errorf("getting relative path for %s: %w", path, err)
 		}
-		if isPathIgnored(relPath, patterns) {
+
+		if patternMatcher.IsPathIgnored(relPath, patterns) {
 			if d.IsDir() {
 				return filepath.SkipDir
 			}
 			return nil
 		}
+
 		if !d.IsDir() && isFileAllowed(d.Name(), allowedLanguages, allowedFileNames) {
 			processed++
-			return writeMarkdown(path, outputFile, getMdLang(d.Name(), allowedFileNames, specialFileLanguages))
+			return writeMarkdown(path, outputFile, getMdLang(d.Name(), allowedFileNames, specialFileLanguages), maxFileSize)
 		}
+
 		return nil
 	})
-	if processed == 0 {
-		return errors.New("file list is empty")
+
+	if ret != nil {
+		return ret
 	}
-	return ret
+
+	if processed == 0 {
+		return errors.New("no files processed - file list is empty")
+	}
+
+	return nil
 }
 
-func writeMarkdown(path string, outputFile *os.File, lang string) error {
-	prefix := ""
-	suffix := ""
-	if lang != "md" {
-		prefix = "```" + lang + "\n"
-		suffix = "\n```"
-	}
-	content, err := os.ReadFile(path)
+func writeMarkdown(path string, outputFile *os.File, lang string, maxFileSize int64) error {
+	fileInfo, err := os.Stat(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("stating file %s: %w", path, err)
 	}
 
-	if _, err = outputFile.WriteString("# " + path + "\n\n" + prefix); err != nil {
-		return err
+	if fileInfo.Size() > maxFileSize {
+		fmt.Fprintf(os.Stderr, "Warning: skipping large file %s (%d bytes)\n", path, fileInfo.Size())
+		return nil
 	}
-	if _, err = outputFile.Write(content); err != nil {
-		return err
+
+	var buf strings.Builder
+	buf.WriteString("# ")
+	buf.WriteString(path)
+	buf.WriteString("\n")
+
+	if lang != "md" {
+		buf.WriteString("```" + lang + "\n")
 	}
-	if _, err = outputFile.WriteString(suffix + "\n\n"); err != nil {
-		return err
+
+	if _, err := outputFile.WriteString(buf.String()); err != nil {
+		return fmt.Errorf("writing header for %s: %w", path, err)
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("opening file %s: %w", path, err)
+	}
+	defer file.Close()
+
+	if _, err := io.Copy(outputFile, file); err != nil {
+		return fmt.Errorf("copying content from %s: %w", path, err)
+	}
+
+	suffix := ""
+	if lang != "md" {
+		suffix = "\n```"
+	}
+	suffix += "\n\n"
+
+	if _, err := outputFile.WriteString(suffix); err != nil {
+		return fmt.Errorf("writing suffix for %s: %w", path, err)
 	}
 
 	return nil
@@ -150,53 +212,6 @@ func getMdLang(filename string, allowedFileNames map[string]bool, specialFileLan
 		lang = "plaintext"
 	}
 	return lang
-}
-
-func doesPathMatchPattern(path, pattern string) bool {
-	if pattern == path {
-		return true
-	}
-	if strings.HasPrefix(pattern, "/") && strings.HasSuffix(pattern, "/") {
-		return strings.HasPrefix(path, strings.TrimPrefix(pattern, "/"))
-	}
-	if strings.HasPrefix(pattern, "**") {
-		// Handle globstar matching for the start of the pattern (e.g., **.min.css)
-		// TODO: check out https://github.com/bmatcuk/doublestar
-		subPattern := strings.TrimPrefix(pattern, "**/")
-		if subPattern == pattern {
-			subPattern = strings.TrimPrefix(pattern, "**")
-			_, fileName := filepath.Split(path)
-			matched, _ := filepath.Match("*"+subPattern, fileName)
-			return matched
-		}
-
-		parts := strings.Split(path, string(filepath.Separator))
-		for i := 0; i < len(parts); i++ {
-			remainingPath := strings.Join(parts[i:], string(filepath.Separator))
-			matched, _ := filepath.Match(subPattern, remainingPath)
-			if matched {
-				return true
-			}
-		}
-		return false
-	}
-	if strings.Contains(pattern, "*") {
-		matched, _ := filepath.Match(pattern, path)
-		return matched
-	}
-	return false
-}
-
-func isPathIgnored(path string, patterns []string) bool {
-	for _, pattern := range patterns {
-		if strings.HasSuffix(pattern, "/") && strings.HasPrefix(path, pattern) {
-			return true
-		}
-		if doesPathMatchPattern(path, pattern) {
-			return true
-		}
-	}
-	return false
 }
 
 func isFileAllowed(filename string, allowedLanguages, allowedFileNames map[string]bool) bool {

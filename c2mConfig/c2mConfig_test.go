@@ -7,166 +7,182 @@ import (
 	"testing"
 )
 
-func TestGetActiveLanguages(t *testing.T) {
-	active := GetActiveLanguages()
-	expected := 7
-
-	if len(active) != expected {
-		t.Errorf("GetActiveLanguages() = %v (count: %d); want %d", active, len(active), expected)
-	}
-}
-
-func TestGetInactiveLanguages(t *testing.T) {
-	inactive := GetInactiveLanguages()
-	expected := 8
-
-	if len(inactive) != expected {
-		t.Errorf("GetInactiveLanguages() = %v (count: %d); want %d", inactive, len(inactive), expected)
-	}
-}
-
-func TestInitializeConfigFromFlags(t *testing.T) {
-	// Set up test flags
-	os.Args = []string{"cmd", "-input", "test_input", "-output", "test_output", "-languages", ".go,.js", "-ignore", ".txt,.log"}
-	config := InitializeConfigFromFlags()
-
-	expectedConfig := Config{
-		InputFolder:    "test_input",
-		OutputMarkdown: "test_output",
-		AllowedFileNames: map[string]bool{
-			"go.mod":       true,
-			"package.json": true,
+func TestParseLanguages(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected map[string]bool
+	}{
+		{
+			name:  "single language",
+			input: ".go",
+			expected: map[string]bool{
+				".go": true, ".php": false, ".js": false, ".ts": false,
+				".py": false, ".sh": false, ".java": false, ".md": false,
+				".html": false, ".scss": false, ".css": false, ".json": false,
+				".yaml": false, ".yml": false, ".xml": false,
+			},
 		},
-		IgnorePatterns: []string{".txt", ".log", "test_output"},
+		{
+			name:  "multiple languages",
+			input: ".go,.js,.php",
+			expected: map[string]bool{
+				".go": true, ".php": true, ".js": true, ".ts": false,
+				".py": false, ".sh": false, ".java": false, ".md": false,
+				".html": false, ".scss": false, ".css": false, ".json": false,
+				".yaml": false, ".yml": false, ".xml": false,
+			},
+		},
+		{
+			name:  "languages without dots",
+			input: "go,js",
+			expected: map[string]bool{
+				".go": true, ".js": true, ".php": false, ".ts": false,
+				".py": false, ".sh": false, ".java": false, ".md": false,
+				".html": false, ".scss": false, ".css": false, ".json": false,
+				".yaml": false, ".yml": false, ".xml": false,
+			},
+		},
+		{
+			name:  "uppercase languages",
+			input: "GO,JS",
+			expected: map[string]bool{
+				".go": true, ".js": true, ".php": false, ".ts": false,
+				".py": false, ".sh": false, ".java": false, ".md": false,
+				".html": false, ".scss": false, ".css": false, ".json": false,
+				".yaml": false, ".yml": false, ".xml": false,
+			},
+		},
 	}
 
-	if !reflect.DeepEqual(config, expectedConfig) {
-		t.Errorf("InitializeConfigFromFlags() = %v; want %v", config, expectedConfig)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := parseLanguages(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("parseLanguages(%q) = %v; want %v", tt.input, result, tt.expected)
+			}
+		})
 	}
 }
 
 func TestIsConfigValid(t *testing.T) {
 	tests := []struct {
-		config Config
+		name   string
+		config *Config
 		want   bool
 	}{
-		{Config{InputFolder: "input", OutputMarkdown: "output"}, true},
-		{Config{InputFolder: "", OutputMarkdown: "output"}, false},
-		{Config{InputFolder: "input", OutputMarkdown: ""}, true},
-		{Config{InputFolder: "", OutputMarkdown: ""}, false},
+		{"valid config", &Config{InputFolder: "input", OutputMarkdown: "output"}, true},
+		{"empty input folder", &Config{InputFolder: "", OutputMarkdown: "output"}, false},
+		{"valid without output", &Config{InputFolder: "input", OutputMarkdown: ""}, true},
+		{"nil config", nil, false},
 	}
 
 	for _, tt := range tests {
-		if got := IsConfigValid(tt.config); got != tt.want {
-			t.Errorf("IsConfigValid(%v) = %v; want %v", tt.config, got, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsConfigValid(tt.config); got != tt.want {
+				t.Errorf("IsConfigValid(%v) = %v; want %v", tt.config, got, tt.want)
+			}
+		})
 	}
 }
 
-func TestUpdateLanguagesFilter(t *testing.T) {
-	updateLanguagesFilter(".go,.js")
-	expected := map[string]bool{
-		".php":  false,
+func TestGetMapOfAllowedFileNames(t *testing.T) {
+	allowedLanguages := map[string]bool{
 		".go":   true,
+		".php":  true,
 		".js":   true,
-		".java": false,
-		".md":   false,
-		".ts":   false,
-		".py":   false,
-		".sh":   false,
-		".html": false,
-		".scss": false,
-		".css":  false,
-		".json": false,
-		".yaml": false,
-		".yml":  false,
-		".xml":  false,
+		".java": true,
 	}
 
-	if !reflect.DeepEqual(GetAllowedLanguages(), expected) {
-		t.Errorf("updateLanguagesFilter() = %v; want %v", GetAllowedLanguages(), expected)
-	}
-}
-
-func TestFetchAllowedFileNames(t *testing.T) {
-	updateLanguagesFilter(".go,.php,.js,.java")
-	allowedFileNames := GetAllowedFileNames(GetAllowedLanguages())
+	allowedFileNames := getMapOfAllowedFileNames(allowedLanguages)
 	expected := map[string]bool{
 		"go.mod":        true,
 		"composer.json": true,
 		"package.json":  true,
 		"pom.xml":       true,
 	}
+
 	if !reflect.DeepEqual(allowedFileNames, expected) {
-		t.Errorf("fetchAllowedFileNames() = %v; want %v", allowedFileNames, expected)
-	}
-
-}
-func TestFetchAllowedFileNamesCapitalLetters(t *testing.T) {
-	updateLanguagesFilter("GO,PHP")
-	allowedFileNames := GetAllowedFileNames(GetAllowedLanguages())
-	expected := map[string]bool{
-		"go.mod":        true,
-		"composer.json": true,
-	}
-	if !reflect.DeepEqual(allowedFileNames, expected) {
-		t.Errorf("fetchAllowedFileNames (Capital Letters): %v; want %v", allowedFileNames, expected)
-	}
-}
-
-func TestParseIgnorePatterns(t *testing.T) {
-	patterns := parseIgnorePatterns(".txt,.log")
-	expected := []string{".txt", ".log"}
-
-	if !reflect.DeepEqual(patterns, expected) {
-		t.Errorf("parseIgnorePatterns() = %v; want %v", patterns, expected)
-	}
-}
-
-func TestParseIgnorePatternsEmpty(t *testing.T) {
-	patterns := parseIgnorePatterns("")
-	expected := []string{}
-
-	if !reflect.DeepEqual(patterns, expected) {
-		t.Errorf("parseIgnorePatterns() = %v; want %v", patterns, expected)
+		t.Errorf("getMapOfAllowedFileNames() = %v; want %v", allowedFileNames, expected)
 	}
 }
 
 func TestLoadGitignorePatterns(t *testing.T) {
 	tempDir := t.TempDir()
 	gitignorePath := filepath.Join(tempDir, ".gitignore")
-	err := os.WriteFile(gitignorePath, []byte("*.txt\n*.log\n"), 0644)
+
+	content := "*.txt\n*.log\n# comment\n\n"
+	err := os.WriteFile(gitignorePath, []byte(content), 0644)
 	if err != nil {
 		t.Fatalf("Failed to write .gitignore file: %v", err)
 	}
 
 	patterns, err := LoadGitignorePatterns(gitignorePath)
 	if err != nil {
-		t.Errorf("LoadGitignorePatterns() threw an unexpected error: %v", err)
+		t.Errorf("LoadGitignorePatterns() error: %v", err)
 	}
-	expected := []string{"*.txt", "*.log"}
 
+	expected := []string{"*.txt", "*.log"}
 	if !reflect.DeepEqual(patterns, expected) {
 		t.Errorf("LoadGitignorePatterns() = %v; want %v", patterns, expected)
 	}
 }
 
-func TestSliceContains(t *testing.T) {
-	tests := []struct {
-		slice []string
-		item  string
-		want  bool
-	}{
-		{[]string{"go", "php", "js"}, "go", true},
-		{[]string{"go", "php", "js"}, "java", false},
-		{[]string{}, "go", false},
-		{[]string{"go", "php", "js"}, "Go", false},
-		{[]string{"go", "php", "js", "Go"}, "Go", true},
+func TestLoadGitignorePatternsNonExistent(t *testing.T) {
+	patterns, err := LoadGitignorePatterns("/nonexistent/.gitignore")
+	if err != nil {
+		t.Errorf("LoadGitignorePatterns() should not error on non-existent file: %v", err)
 	}
 
-	for _, tt := range tests {
-		if got := sliceContains(tt.slice, tt.item); got != tt.want {
-			t.Errorf("sliceContains(%v, %q) = %v; want %v", tt.slice, tt.item, got, tt.want)
+	if len(patterns) != 0 {
+		t.Errorf("LoadGitignorePatterns() = %v; want empty slice", patterns)
+	}
+}
+
+func TestGetActiveLanguages(t *testing.T) {
+	config := &Config{
+		AllowedLanguages: map[string]bool{
+			".go":  true,
+			".js":  true,
+			".php": false,
+		},
+	}
+
+	active := GetActiveLanguages(config)
+
+	if len(active) != 2 {
+		t.Errorf("GetActiveLanguages() returned %d languages; want 2", len(active))
+	}
+
+	hasGo := false
+	hasJs := false
+	for _, lang := range active {
+		if lang == "go" {
+			hasGo = true
 		}
+		if lang == "js" {
+			hasJs = true
+		}
+	}
+
+	if !hasGo || !hasJs {
+		t.Errorf("GetActiveLanguages() = %v; want [go, js]", active)
+	}
+}
+
+func TestGetInactiveLanguages(t *testing.T) {
+	config := &Config{
+		AllowedLanguages: map[string]bool{
+			".go":  true,
+			".js":  true,
+			".php": false,
+			".py":  false,
+		},
+	}
+
+	inactive := GetInactiveLanguages(config)
+
+	if len(inactive) != 2 {
+		t.Errorf("GetInactiveLanguages() returned %d languages; want 2", len(inactive))
 	}
 }

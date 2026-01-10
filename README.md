@@ -85,14 +85,15 @@ code2md -i . -o code.md
 
 ### Command-Line Flags
 
-| Flag          | Short | Description                                                     |
-| ------------- | ----- | --------------------------------------------------------------- |
-| `--input`     | `-i`  | Input directory to scan (required)                              |
-| `--output`    | `-o`  | Output Markdown file (optional, defaults to stdout)             |
-| `--languages` | `-l`  | Comma-separated list of allowed languages (extensions or names) |
-| `--ignore`    | `-I`  | Comma-separated ignore patterns                                 |
-| `--help`      | `-h`  | Show help                                                       |
-| `--version`   | `-v`  | Show version information                                        |
+| Flag              | Short | Description                                                     |
+| ----------------- | ----- | --------------------------------------------------------------- |
+| `--input`         | `-i`  | Input directory to scan (required)                              |
+| `--output`        | `-o`  | Output Markdown file (optional, defaults to stdout)             |
+| `--languages`     | `-l`  | Comma-separated list of allowed languages (extensions or names) |
+| `--ignore`        | `-I`  | Comma-separated ignore patterns                                 |
+| `--max-file-size` | `-m`  | Maximum file size in bytes (default: 100MB)                     |
+| `--help`          | `-h`  | Show help                                                       |
+| `--version`       | `-v`  | Show version information                                        |
 
 ## Hint: getting the generated file into clipboard
 These commands copy the contents of `code.md` into the clipboard.

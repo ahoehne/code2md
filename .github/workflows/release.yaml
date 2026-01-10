@@ -19,19 +19,13 @@ jobs:
 
     - name: Verify tag is on main branch
       run: |
-        # Get the commit SHA of the tag
         TAG_COMMIT=$(git rev-list -n 1 ${{ github.ref }})
 
-        # Get the commit SHA of the main branch
-        MAIN_COMMIT=$(git rev-parse origin/main)
-
-        # Check if the tag points to a commit that is reachable from main
         if ! git merge-base --is-ancestor $TAG_COMMIT origin/main; then
           echo "Error: Tag ${{ github.ref_name }} is not on the main branch"
           exit 1
         fi
 
-        # Additionally, verify that main is reachable from the tag (no divergence)
         if ! git merge-base --is-ancestor origin/main $TAG_COMMIT; then
           echo "Error: Tag ${{ github.ref_name }} is ahead of main but on a different branch"
           exit 1
@@ -42,21 +36,20 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '>= 1.25'
+        go-version: '1.25'
         cache: false
 
     - name: Build
       run: |
-        chmod +x build-all.sh
-        TriggeredTagName=${GITHUB_REF#refs/tags/}
-        CurrentGitTagName=$(git describe --tags --exact-match 2>/dev/null || echo "not-a-tag")
+        TAG_NAME=${GITHUB_REF#refs/tags/}
 
-        if [ "$TriggeredTagName" != "$CurrentGitTagName" ]; then
-          echo "Validation failed: Triggered tag $TriggeredTagName does not match current git state $CurrentGitTagName"
+        if [ "$TAG_NAME" != "$(git describe --tags --exact-match 2>/dev/null)" ]; then
+          echo "Validation failed: Triggered tag $TAG_NAME does not match current git state"
           exit 1
         fi
 
-        ./build-all.sh "$TriggeredTagName"
+        chmod +x build-all.sh
+        ./build-all.sh "$TAG_NAME"
 
     - name: Create Release
       uses: softprops/action-gh-release@v2

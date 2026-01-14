@@ -33,6 +33,6 @@ ifeq ($(GOOS),windows)
 	copy "dist/${appName}-${GOOS}-${GOARCH}${fileExtension}" "C:\Program Files\${appName}\${appName}${fileExtension}"
 	setx PATH "%PATH%;C:\Program Files\${appName}"
 else
-	install -m 755 -o root -g root "dist/${appName}-${GOOS}-${GOARCH}" /usr/bin/${appName}
+	install -m 755 -o root -g root "dist/${appName}-${GOOS}-${GOARCH}" /usr/local/bin/${appName}
 endif
 

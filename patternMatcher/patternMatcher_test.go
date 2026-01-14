@@ -143,6 +143,8 @@ func TestMatchGlobstar(t *testing.T) {
 		{"deeply nested", "a/b/c/d/main.min.css", "**.min.css", true},
 		{"regular css", "style.css", "**.min.css", false},
 		{"globstar with path", "src/node_modules/file.js", "**/node_modules/file.js", true},
+		{"globstar no match in any segment", "src/lib/utils.js", "**/node_modules/file.js", false},
+		{"globstar partial path no match", "a/b/c/other.txt", "**/specific/file.txt", false},
 	}
 
 	for _, tt := range tests {

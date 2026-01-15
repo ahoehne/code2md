@@ -2,6 +2,7 @@ package c2mConfig
 
 import (
 	"bufio"
+	"code2md/language"
 	"flag"
 	"os"
 	"path/filepath"
@@ -24,24 +25,6 @@ type Config struct {
 	Version          bool
 }
 
-var supportedLanguages = map[string]bool{
-	".php":  true,
-	".go":   true,
-	".js":   true,
-	".ts":   true,
-	".py":   true,
-	".sh":   true,
-	".java": true,
-	".md":   false,
-	".html": false,
-	".scss": false,
-	".css":  false,
-	".json": false,
-	".yaml": false,
-	".yml":  false,
-	".xml":  false,
-}
-
 func InitializeConfigFromFlags() (*Config, error) {
 	inputFolder := flag.String("input", "", "Input folder to scan")
 	outputMarkdown := flag.String("output", "", "Output Markdown file")
@@ -61,7 +44,7 @@ func InitializeConfigFromFlags() (*Config, error) {
 
 	flag.Parse()
 
-	allowedLanguages := parseLanguages(*languages)
+	allowedLanguages := language.ParseLanguages(*languages)
 
 	var ignorePatternsList []string
 	if *ignorePatterns == "" {
@@ -84,7 +67,7 @@ func InitializeConfigFromFlags() (*Config, error) {
 		InputFolder:      *inputFolder,
 		OutputMarkdown:   *outputMarkdown,
 		AllowedLanguages: allowedLanguages,
-		AllowedFileNames: getMapOfAllowedFileNames(allowedLanguages),
+		AllowedFileNames: language.GetAllowedFileNames(allowedLanguages),
 		IgnorePatterns:   ignorePatternsList,
 		MaxFileSize:      *maxFileSize,
 		Help:             *help,
@@ -92,58 +75,8 @@ func InitializeConfigFromFlags() (*Config, error) {
 	}, nil
 }
 
-func parseLanguages(languages string) map[string]bool {
-	result := make(map[string]bool)
-
-	if languages == "" {
-		for lang, defaultEnabled := range supportedLanguages {
-			result[lang] = defaultEnabled
-		}
-		return result
-	}
-
-	for lang := range supportedLanguages {
-		result[lang] = false
-	}
-
-	selectedLanguages := strings.Split(languages, ",")
-	for _, lang := range selectedLanguages {
-		lang = strings.TrimSpace(lang)
-		if !strings.HasPrefix(lang, ".") {
-			lang = "." + lang
-		}
-		lang = strings.ToLower(lang)
-
-		if _, exists := supportedLanguages[lang]; exists {
-			result[lang] = true
-		}
-	}
-
-	return result
-}
-
 func IsConfigValid(config *Config) bool {
 	return config != nil && config.InputFolder != ""
-}
-
-func getMapOfAllowedFileNames(allowedLanguages map[string]bool) map[string]bool {
-	allowedFileNames := make(map[string]bool)
-	if allowedLanguages[".go"] {
-		allowedFileNames["go.mod"] = true
-	}
-	if allowedLanguages[".php"] {
-		allowedFileNames["composer.json"] = true
-	}
-	if allowedLanguages[".js"] || allowedLanguages[".ts"] {
-		allowedFileNames["package.json"] = true
-	}
-	if allowedLanguages[".ts"] {
-		allowedFileNames["tsconfig.json"] = true
-	}
-	if allowedLanguages[".java"] {
-		allowedFileNames["pom.xml"] = true
-	}
-	return allowedFileNames
 }
 
 func LoadGitignorePatterns(path string) ([]string, error) {
@@ -170,50 +103,4 @@ func LoadGitignorePatterns(path string) ([]string, error) {
 	}
 
 	return patterns, nil
-}
-
-func GetActiveLanguages(config *Config) []string {
-	if config == nil {
-		return []string{}
-	}
-
-	var active []string
-	for lang, enabled := range config.AllowedLanguages {
-		if enabled {
-			active = append(active, strings.TrimPrefix(lang, "."))
-		}
-	}
-	return active
-}
-
-func GetInactiveLanguages(config *Config) []string {
-	if config == nil {
-		return []string{}
-	}
-
-	var inactive []string
-	for lang, enabled := range config.AllowedLanguages {
-		if !enabled {
-			inactive = append(inactive, strings.TrimPrefix(lang, "."))
-		}
-	}
-	return inactive
-}
-
-func GetDefaultLanguages() []string {
-	var defaults []string
-	for lang, defaultEnabled := range supportedLanguages {
-		if defaultEnabled {
-			defaults = append(defaults, strings.TrimPrefix(lang, "."))
-		}
-	}
-	return defaults
-}
-
-func GetSupportedLanguages() []string {
-	var languages []string
-	for lang := range supportedLanguages {
-		languages = append(languages, strings.TrimPrefix(lang, "."))
-	}
-	return languages
 }

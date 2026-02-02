@@ -6,14 +6,47 @@ import (
 	"testing"
 )
 
+func TestIsDockerfile(t *testing.T) {
+	tests := []struct {
+		filename string
+		want     bool
+	}{
+		{"Dockerfile", true},
+		{"dockerfile", true},
+		{"DOCKERFILE", true},
+		{"DockerFile", true},
+		{"Dockerfile.dev", true},
+		{"Dockerfile.prod", true},
+		{"Dockerfile.test", true},
+		{"dockerfile.local", true},
+		{"DOCKERFILE.CI", true},
+		{"Dockerfile.multi.stage", true},
+		{"NotDockerfile", false},
+		{"MyDockerfile", false},
+		{"Dockerfile-dev", false},
+		{"docker-compose.yml", false},
+		{".dockerfile", false},
+		{"file.dockerfile", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.filename, func(t *testing.T) {
+			if got := isDockerfile(tt.filename); got != tt.want {
+				t.Errorf("isDockerfile(%q) = %v; want %v", tt.filename, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestIsFileAllowed(t *testing.T) {
 	allowedLanguages := map[string]bool{
-		".php":  true,
-		".go":   true,
-		".js":   true,
-		".ts":   true,
-		".java": true,
-		".json": false,
+		".php":        true,
+		".go":         true,
+		".js":         true,
+		".ts":         true,
+		".java":       true,
+		".json":       false,
+		".dockerfile": true,
 	}
 
 	allowedFileNames := map[string]bool{
@@ -38,6 +71,12 @@ func TestIsFileAllowed(t *testing.T) {
 		{"txt file not allowed", "file.txt", false},
 		{"special file go.mod", "go.mod", true},
 		{"special file composer.json", "composer.json", true},
+		{"Dockerfile capitalized", "Dockerfile", true},
+		{"dockerfile lowercase", "dockerfile", true},
+		{"DOCKERFILE uppercase", "DOCKERFILE", true},
+		{"Dockerfile.dev multi-stage", "Dockerfile.dev", true},
+		{"Dockerfile.prod multi-stage", "Dockerfile.prod", true},
+		{"dockerfile.test lowercase multi-stage", "dockerfile.test", true},
 		{"multi-dot js", "file.with.multiple.dots.js", true},
 		{"no extension", "file_without_extension", false},
 		{"multi-dot php", "file.with.multiple.dots.php", true},
@@ -49,6 +88,34 @@ func TestIsFileAllowed(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if got := IsFileAllowed(tt.filename, allowedLanguages, allowedFileNames); got != tt.want {
+				t.Errorf("IsFileAllowed(%q) = %v; want %v", tt.filename, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsFileAllowedDockerfileDisabled(t *testing.T) {
+	allowedLanguages := map[string]bool{
+		".go":         true,
+		".dockerfile": false,
+	}
+	allowedFileNames := map[string]bool{
+		"go.mod": true,
+	}
+
+	tests := []struct {
+		filename string
+		want     bool
+	}{
+		{"Dockerfile", false},
+		{"dockerfile", false},
+		{"Dockerfile.dev", false},
+		{"main.go", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.filename, func(t *testing.T) {
 			if got := IsFileAllowed(tt.filename, allowedLanguages, allowedFileNames); got != tt.want {
 				t.Errorf("IsFileAllowed(%q) = %v; want %v", tt.filename, got, tt.want)
 			}
@@ -69,6 +136,12 @@ func TestGetMarkdownLanguage(t *testing.T) {
 		{"go file", "main.go", "go"},
 		{"js file", "script.js", "js"},
 		{"go.mod special", "go.mod", "go"},
+		{"Dockerfile capitalized", "Dockerfile", "dockerfile"},
+		{"dockerfile lowercase", "dockerfile", "dockerfile"},
+		{"DOCKERFILE uppercase", "DOCKERFILE", "dockerfile"},
+		{"Dockerfile.dev multi-stage", "Dockerfile.dev", "dockerfile"},
+		{"Dockerfile.prod multi-stage", "Dockerfile.prod", "dockerfile"},
+		{"dockerfile.test multi-stage", "dockerfile.test", "dockerfile"},
 		{"no extension", "README", "plaintext"},
 		{"md file", "README.md", "md"},
 		{"php file", "index.php", "php"},
@@ -98,9 +171,9 @@ func TestParseLanguages(t *testing.T) {
 			input: "",
 			expected: map[string]bool{
 				".go": true, ".php": true, ".js": true, ".ts": true,
-				".py": true, ".sh": true, ".java": true, ".md": false,
-				".html": false, ".scss": false, ".css": false, ".json": false,
-				".yaml": false, ".yml": false, ".xml": false,
+				".py": true, ".sh": true, ".java": true, ".dockerfile": true,
+				".md": false, ".html": false, ".scss": false, ".css": false,
+				".json": false, ".yaml": false, ".yml": false, ".xml": false,
 			},
 		},
 		{
@@ -108,9 +181,9 @@ func TestParseLanguages(t *testing.T) {
 			input: ".go",
 			expected: map[string]bool{
 				".go": true, ".php": false, ".js": false, ".ts": false,
-				".py": false, ".sh": false, ".java": false, ".md": false,
-				".html": false, ".scss": false, ".css": false, ".json": false,
-				".yaml": false, ".yml": false, ".xml": false,
+				".py": false, ".sh": false, ".java": false, ".dockerfile": false,
+				".md": false, ".html": false, ".scss": false, ".css": false,
+				".json": false, ".yaml": false, ".yml": false, ".xml": false,
 			},
 		},
 		{
@@ -118,9 +191,9 @@ func TestParseLanguages(t *testing.T) {
 			input: ".go,.js,.php",
 			expected: map[string]bool{
 				".go": true, ".php": true, ".js": true, ".ts": false,
-				".py": false, ".sh": false, ".java": false, ".md": false,
-				".html": false, ".scss": false, ".css": false, ".json": false,
-				".yaml": false, ".yml": false, ".xml": false,
+				".py": false, ".sh": false, ".java": false, ".dockerfile": false,
+				".md": false, ".html": false, ".scss": false, ".css": false,
+				".json": false, ".yaml": false, ".yml": false, ".xml": false,
 			},
 		},
 		{
@@ -128,9 +201,9 @@ func TestParseLanguages(t *testing.T) {
 			input: "go,js",
 			expected: map[string]bool{
 				".go": true, ".js": true, ".php": false, ".ts": false,
-				".py": false, ".sh": false, ".java": false, ".md": false,
-				".html": false, ".scss": false, ".css": false, ".json": false,
-				".yaml": false, ".yml": false, ".xml": false,
+				".py": false, ".sh": false, ".java": false, ".dockerfile": false,
+				".md": false, ".html": false, ".scss": false, ".css": false,
+				".json": false, ".yaml": false, ".yml": false, ".xml": false,
 			},
 		},
 		{
@@ -138,9 +211,9 @@ func TestParseLanguages(t *testing.T) {
 			input: "GO,JS",
 			expected: map[string]bool{
 				".go": true, ".js": true, ".php": false, ".ts": false,
-				".py": false, ".sh": false, ".java": false, ".md": false,
-				".html": false, ".scss": false, ".css": false, ".json": false,
-				".yaml": false, ".yml": false, ".xml": false,
+				".py": false, ".sh": false, ".java": false, ".dockerfile": false,
+				".md": false, ".html": false, ".scss": false, ".css": false,
+				".json": false, ".yaml": false, ".yml": false, ".xml": false,
 			},
 		},
 		{
@@ -148,9 +221,9 @@ func TestParseLanguages(t *testing.T) {
 			input: " go , js ",
 			expected: map[string]bool{
 				".go": true, ".js": true, ".php": false, ".ts": false,
-				".py": false, ".sh": false, ".java": false, ".md": false,
-				".html": false, ".scss": false, ".css": false, ".json": false,
-				".yaml": false, ".yml": false, ".xml": false,
+				".py": false, ".sh": false, ".java": false, ".dockerfile": false,
+				".md": false, ".html": false, ".scss": false, ".css": false,
+				".json": false, ".yaml": false, ".yml": false, ".xml": false,
 			},
 		},
 		{
@@ -158,9 +231,29 @@ func TestParseLanguages(t *testing.T) {
 			input: "go,ruby,js",
 			expected: map[string]bool{
 				".go": true, ".js": true, ".php": false, ".ts": false,
-				".py": false, ".sh": false, ".java": false, ".md": false,
-				".html": false, ".scss": false, ".css": false, ".json": false,
-				".yaml": false, ".yml": false, ".xml": false,
+				".py": false, ".sh": false, ".java": false, ".dockerfile": false,
+				".md": false, ".html": false, ".scss": false, ".css": false,
+				".json": false, ".yaml": false, ".yml": false, ".xml": false,
+			},
+		},
+		{
+			name:  "dockerfile explicitly enabled",
+			input: "dockerfile",
+			expected: map[string]bool{
+				".go": false, ".js": false, ".php": false, ".ts": false,
+				".py": false, ".sh": false, ".java": false, ".dockerfile": true,
+				".md": false, ".html": false, ".scss": false, ".css": false,
+				".json": false, ".yaml": false, ".yml": false, ".xml": false,
+			},
+		},
+		{
+			name:  "dockerfile uppercase",
+			input: "DOCKERFILE",
+			expected: map[string]bool{
+				".go": false, ".js": false, ".php": false, ".ts": false,
+				".py": false, ".sh": false, ".java": false, ".dockerfile": true,
+				".md": false, ".html": false, ".scss": false, ".css": false,
+				".json": false, ".yaml": false, ".yml": false, ".xml": false,
 			},
 		},
 	}
@@ -182,13 +275,14 @@ func TestGetAllowedFileNames(t *testing.T) {
 		expected         map[string]bool
 	}{
 		{
-			name: "all languages",
+			name: "all languages except dockerfile",
 			allowedLanguages: map[string]bool{
-				".go":   true,
-				".php":  true,
-				".js":   true,
-				".ts":   true,
-				".java": true,
+				".go":         true,
+				".php":        true,
+				".js":         true,
+				".ts":         true,
+				".java":       true,
+				".dockerfile": true,
 			},
 			expected: map[string]bool{
 				"go.mod":        true,
@@ -227,6 +321,13 @@ func TestGetAllowedFileNames(t *testing.T) {
 			},
 		},
 		{
+			name: "only dockerfile returns empty",
+			allowedLanguages: map[string]bool{
+				".dockerfile": true,
+			},
+			expected: map[string]bool{},
+		},
+		{
 			name:             "no languages",
 			allowedLanguages: map[string]bool{},
 			expected:         map[string]bool{},
@@ -246,15 +347,16 @@ func TestGetAllowedFileNames(t *testing.T) {
 func TestGetActiveLanguages(t *testing.T) {
 	t.Run("returns active languages", func(t *testing.T) {
 		allowedLanguages := map[string]bool{
-			".go":  true,
-			".js":  true,
-			".php": false,
+			".go":         true,
+			".js":         true,
+			".php":        false,
+			".dockerfile": true,
 		}
 
 		active := GetActiveLanguages(allowedLanguages)
 		sort.Strings(active)
 
-		expected := []string{"go", "js"}
+		expected := []string{"dockerfile", "go", "js"}
 		sort.Strings(expected)
 
 		if !reflect.DeepEqual(active, expected) {
@@ -286,10 +388,11 @@ func TestGetActiveLanguages(t *testing.T) {
 func TestGetInactiveLanguages(t *testing.T) {
 	t.Run("returns inactive languages", func(t *testing.T) {
 		allowedLanguages := map[string]bool{
-			".go":  true,
-			".js":  true,
-			".php": false,
-			".py":  false,
+			".go":         true,
+			".js":         true,
+			".php":        false,
+			".py":         false,
+			".dockerfile": true,
 		}
 
 		inactive := GetInactiveLanguages(allowedLanguages)
@@ -326,7 +429,7 @@ func TestGetInactiveLanguages(t *testing.T) {
 func TestGetDefaultLanguages(t *testing.T) {
 	defaults := GetDefaultLanguages()
 
-	expectedDefaults := []string{"php", "go", "js", "ts", "py", "sh", "java"}
+	expectedDefaults := []string{"php", "go", "js", "ts", "py", "sh", "java", "dockerfile"}
 	sort.Strings(defaults)
 	sort.Strings(expectedDefaults)
 
@@ -342,7 +445,7 @@ func TestGetDefaultLanguages(t *testing.T) {
 func TestGetSupportedLanguages(t *testing.T) {
 	supported := GetSupportedLanguages()
 
-	expectedSupported := []string{"php", "go", "js", "ts", "py", "sh", "java", "md", "html", "scss", "css", "json", "yaml", "yml", "xml"}
+	expectedSupported := []string{"php", "go", "js", "ts", "py", "sh", "java", "dockerfile", "md", "html", "scss", "css", "json", "yaml", "yml", "xml"}
 
 	if len(supported) != len(expectedSupported) {
 		t.Errorf("GetSupportedLanguages() returned %d languages; want %d", len(supported), len(expectedSupported))

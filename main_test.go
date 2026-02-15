@@ -27,6 +27,7 @@ func TestRun(t *testing.T) {
 		}
 
 		oldStdout := os.Stdout
+		defer func() { os.Stdout = oldStdout }()
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 
@@ -106,6 +107,7 @@ func TestRun(t *testing.T) {
 
 func TestDisplayVersion(t *testing.T) {
 	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
@@ -126,6 +128,7 @@ func TestDisplayVersion(t *testing.T) {
 func TestDisplayUsageInstructions(t *testing.T) {
 	t.Run("with nil config", func(t *testing.T) {
 		oldStdout := os.Stdout
+		defer func() { os.Stdout = oldStdout }()
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 
@@ -152,6 +155,7 @@ func TestDisplayUsageInstructions(t *testing.T) {
 		}
 
 		oldStdout := os.Stdout
+		defer func() { os.Stdout = oldStdout }()
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 
@@ -171,6 +175,7 @@ func TestDisplayUsageInstructions(t *testing.T) {
 
 	t.Run("shows error when requested", func(t *testing.T) {
 		oldStdout := os.Stdout
+		defer func() { os.Stdout = oldStdout }()
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 

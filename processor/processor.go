@@ -20,7 +20,7 @@ type Options struct {
 }
 
 func ProcessDirectory(opts Options, output io.Writer) error {
-	processed := 0
+	found := false
 
 	ret := filepath.WalkDir(opts.InputFolder, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -44,9 +44,9 @@ func ProcessDirectory(opts Options, output io.Writer) error {
 		}
 
 		if !d.IsDir() && language.IsFileAllowed(d.Name(), opts.AllowedLanguages, opts.AllowedFileNames) {
-			processed++
+			found = true
 			lang := language.GetMarkdownLanguage(d.Name(), opts.AllowedFileNames)
-			return WriteMarkdown(path, output, lang, opts.MaxFileSize)
+			return WriteMarkdown(path, relPath, output, lang, opts.MaxFileSize)
 		}
 
 		return nil
@@ -56,27 +56,27 @@ func ProcessDirectory(opts Options, output io.Writer) error {
 		return ret
 	}
 
-	if processed == 0 {
+	if !found {
 		return errors.New("no files processed - file list is empty")
 	}
 
 	return nil
 }
 
-func WriteMarkdown(path string, output io.Writer, lang string, maxFileSize int64) error {
+func WriteMarkdown(path string, displayPath string, output io.Writer, lang string, maxFileSize int64) error {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return fmt.Errorf("stating file %s: %w", path, err)
 	}
 
 	if fileInfo.Size() > maxFileSize {
-		fmt.Fprintf(os.Stderr, "Warning: skipping large file %s (%d bytes)\n", path, fileInfo.Size())
+		fmt.Fprintf(os.Stderr, "Warning: skipping large file %s (%d bytes)\n", displayPath, fileInfo.Size())
 		return nil
 	}
 
 	var buf strings.Builder
 	buf.WriteString("# ")
-	buf.WriteString(path)
+	buf.WriteString(displayPath)
 	buf.WriteString("\n")
 
 	if lang != "md" {
@@ -87,19 +87,21 @@ func WriteMarkdown(path string, output io.Writer, lang string, maxFileSize int64
 		return fmt.Errorf("writing header for %s: %w", path, err)
 	}
 
-	file, err := os.Open(path)
+	content, err := os.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("opening file %s: %w", path, err)
+		return fmt.Errorf("reading file %s: %w", path, err)
 	}
-	defer file.Close()
 
-	if _, err := io.Copy(output, file); err != nil {
-		return fmt.Errorf("copying content from %s: %w", path, err)
+	if _, err := output.Write(content); err != nil {
+		return fmt.Errorf("writing content from %s: %w", path, err)
 	}
 
 	suffix := ""
 	if lang != "md" {
-		suffix = "\n```"
+		if len(content) == 0 || content[len(content)-1] != '\n' {
+			suffix = "\n"
+		}
+		suffix += "```"
 	}
 	suffix += "\n\n"
 

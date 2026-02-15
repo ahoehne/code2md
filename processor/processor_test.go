@@ -21,7 +21,7 @@ func TestWriteMarkdown(t *testing.T) {
 		}
 
 		var output bytes.Buffer
-		err = WriteMarkdown(inputFile, &output, "go", 100*1024*1024)
+		err = WriteMarkdown(inputFile, inputFile, &output, "go", 100*1024*1024)
 		if err != nil {
 			t.Errorf("WriteMarkdown() error: %v", err)
 		}
@@ -53,7 +53,7 @@ func TestWriteMarkdown(t *testing.T) {
 		}
 
 		var output bytes.Buffer
-		err = WriteMarkdown(inputFile, &output, "md", 100*1024*1024)
+		err = WriteMarkdown(inputFile, inputFile, &output, "md", 100*1024*1024)
 		if err != nil {
 			t.Errorf("WriteMarkdown() error: %v", err)
 		}
@@ -82,7 +82,7 @@ func TestWriteMarkdown(t *testing.T) {
 		}
 
 		var output bytes.Buffer
-		err = WriteMarkdown(inputFile, &output, "go", 100)
+		err = WriteMarkdown(inputFile, inputFile, &output, "go", 100)
 		if err != nil {
 			t.Errorf("WriteMarkdown() should not error for large files: %v", err)
 		}
@@ -92,9 +92,57 @@ func TestWriteMarkdown(t *testing.T) {
 		}
 	})
 
+	t.Run("adds newline before closing fence when file lacks trailing newline", func(t *testing.T) {
+		tempDir := t.TempDir()
+		inputFile := filepath.Join(tempDir, "test.go")
+
+		err := os.WriteFile(inputFile, []byte("package main"), 0644)
+		if err != nil {
+			t.Fatalf("Failed to create input file: %v", err)
+		}
+
+		var output bytes.Buffer
+		err = WriteMarkdown(inputFile, inputFile, &output, "go", 100*1024*1024)
+		if err != nil {
+			t.Errorf("WriteMarkdown() error: %v", err)
+		}
+
+		contentStr := output.String()
+		if strings.Contains(contentStr, "main```") {
+			t.Error("Closing fence should not be on the same line as code")
+		}
+		if !strings.Contains(contentStr, "main\n```") {
+			t.Error("Closing fence should be on its own line")
+		}
+	})
+
+	t.Run("uses display path in header", func(t *testing.T) {
+		tempDir := t.TempDir()
+		inputFile := filepath.Join(tempDir, "test.go")
+
+		err := os.WriteFile(inputFile, []byte("package main\n"), 0644)
+		if err != nil {
+			t.Fatalf("Failed to create input file: %v", err)
+		}
+
+		var output bytes.Buffer
+		err = WriteMarkdown(inputFile, "test.go", &output, "go", 100*1024*1024)
+		if err != nil {
+			t.Errorf("WriteMarkdown() error: %v", err)
+		}
+
+		contentStr := output.String()
+		if !strings.HasPrefix(contentStr, "# test.go\n") {
+			t.Errorf("Header should use display path, got: %s", contentStr[:40])
+		}
+		if strings.Contains(contentStr, "# "+tempDir) {
+			t.Error("Header should not contain absolute path")
+		}
+	})
+
 	t.Run("handles non-existent file", func(t *testing.T) {
 		var output bytes.Buffer
-		err := WriteMarkdown("/tmp/nonexistent/file.go", &output, "go", 100*1024*1024)
+		err := WriteMarkdown("/tmp/nonexistent/file.go", "file.go", &output, "go", 100*1024*1024)
 		if err == nil {
 			t.Error("WriteMarkdown() should error for non-existent file")
 		}

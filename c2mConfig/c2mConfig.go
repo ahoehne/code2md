@@ -76,7 +76,7 @@ func InitializeConfigFromFlags() (*Config, error) {
 }
 
 func IsConfigValid(config *Config) bool {
-	return config != nil && config.InputFolder != ""
+	return config != nil && config.InputFolder != "" && config.MaxFileSize > 0
 }
 
 func LoadGitignorePatterns(path string) ([]string, error) {

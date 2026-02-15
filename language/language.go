@@ -1,11 +1,13 @@
 package language
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 )
 
-var SupportedLanguages = map[string]bool{
+var supportedLanguages = map[string]bool{
 	".php":        true,
 	".go":         true,
 	".js":         true,
@@ -37,13 +39,13 @@ func ParseLanguages(languages string) map[string]bool {
 	result := make(map[string]bool)
 
 	if languages == "" {
-		for lang, defaultEnabled := range SupportedLanguages {
+		for lang, defaultEnabled := range supportedLanguages {
 			result[lang] = defaultEnabled
 		}
 		return result
 	}
 
-	for lang := range SupportedLanguages {
+	for lang := range supportedLanguages {
 		result[lang] = false
 	}
 
@@ -55,8 +57,10 @@ func ParseLanguages(languages string) map[string]bool {
 		}
 		lang = strings.ToLower(lang)
 
-		if _, exists := SupportedLanguages[lang]; exists {
+		if _, exists := supportedLanguages[lang]; exists {
 			result[lang] = true
+		} else {
+			fmt.Fprintf(os.Stderr, "Warning: unrecognized language %q, skipping\n", strings.TrimPrefix(lang, "."))
 		}
 	}
 
@@ -126,7 +130,7 @@ func GetInactiveLanguages(allowedLanguages map[string]bool) []string {
 
 func GetDefaultLanguages() []string {
 	var defaults []string
-	for lang, defaultEnabled := range SupportedLanguages {
+	for lang, defaultEnabled := range supportedLanguages {
 		if defaultEnabled {
 			defaults = append(defaults, strings.TrimPrefix(lang, "."))
 		}
@@ -136,7 +140,7 @@ func GetDefaultLanguages() []string {
 
 func GetSupportedLanguages() []string {
 	var languages []string
-	for lang := range SupportedLanguages {
+	for lang := range supportedLanguages {
 		languages = append(languages, strings.TrimPrefix(lang, "."))
 	}
 	return languages

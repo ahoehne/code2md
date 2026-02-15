@@ -13,10 +13,12 @@ func TestIsConfigValid(t *testing.T) {
 		config *Config
 		want   bool
 	}{
-		{"valid config", &Config{InputFolder: "input", OutputMarkdown: "output"}, true},
-		{"empty input folder", &Config{InputFolder: "", OutputMarkdown: "output"}, false},
-		{"valid without output", &Config{InputFolder: "input", OutputMarkdown: ""}, true},
+		{"valid config", &Config{InputFolder: "input", OutputMarkdown: "output", MaxFileSize: 1024}, true},
+		{"empty input folder", &Config{InputFolder: "", OutputMarkdown: "output", MaxFileSize: 1024}, false},
+		{"valid without output", &Config{InputFolder: "input", OutputMarkdown: "", MaxFileSize: 1024}, true},
 		{"nil config", nil, false},
+		{"zero max file size", &Config{InputFolder: "input", MaxFileSize: 0}, false},
+		{"negative max file size", &Config{InputFolder: "input", MaxFileSize: -1}, false},
 	}
 
 	for _, tt := range tests {

@@ -6,28 +6,31 @@ ifeq ($(GOOS),windows)
 else
 	fileExtension=""
 endif
-goVersion="1.25"
+goVersion="1.26"
 
 myUid=1000
 myGid=1000
 
-build:
+help: ## Show this help message
+	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-20s %s\n", $$1, $$2}'
+
+build: ## Build for current platform (dist/)
 	mkdir -p dist && go test ./... && go mod tidy && go build -v -o "dist/${appName}-${GOOS}-${GOARCH}${fileExtension}"
-buildall:
+buildall: ## Build for all platforms
 	go test ./... && ./build-all.sh
-docker-buildall:
+docker-buildall: ## Build all platforms via Docker
 	docker run --rm -it -v "${PWD}":/usr/src/code2md -w /usr/src/code2md "golang:${goVersion}" bash -c "git config --global --add safe.directory /usr/src/code2md && go test ./... && ./build-all.sh && chown -R "${myUid}:${myGid}" dist"
 
-coverage:
+coverage: ## Generate HTML coverage report (cov/)
 	if [ -d cov ]; then rm -rf cov; fi
 	mkdir -p cov
 	go test -coverprofile=cov/coverage.out ./...
 	go tool cover -html=cov/coverage.out -o cov/coverage.html
 
-test:
+test: ## Run tests with verbose output
 	go test ./... -v
 
-install:
+install: ## Install to /usr/local/bin (needs sudo)
 ifeq ($(GOOS),windows)
 	mkdir -p "C:\Program Files\${appName}"
 	copy "dist/${appName}-${GOOS}-${GOARCH}${fileExtension}" "C:\Program Files\${appName}\${appName}${fileExtension}"

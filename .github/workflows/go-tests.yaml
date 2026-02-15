@@ -7,6 +7,9 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -16,8 +19,8 @@ jobs:
         # Debian 12 (bookworm) uses go 1.19
         # Ubuntu 24.04 LTS uses go 1.22
         # Debian 13 (trixie) uses 1.24
-        # Build uses 1.25
-        go-version: [1.18, 1.19, 1.22, 1.24, 1.25]
+        # Build uses 1.26
+        go-version: [1.18, 1.19, 1.22, 1.24, 1.26]
 
     steps:
       - name: Checkout repository
@@ -32,6 +35,9 @@ jobs:
       # not needed without dependencies
       # - name: Install dependencies
       #   run: go mod tidy
+
+      - name: Vet
+        run: go vet ./...
 
       - name: Run tests
         run: go test ./... -v

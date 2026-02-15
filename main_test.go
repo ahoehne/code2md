@@ -9,6 +9,23 @@ import (
 	"testing"
 )
 
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	fn()
+
+	w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	buf.ReadFrom(r)
+	return buf.String()
+}
+
 func TestRun(t *testing.T) {
 	t.Run("writes to stdout when no output specified", func(t *testing.T) {
 		tempDir := t.TempDir()
@@ -26,24 +43,14 @@ func TestRun(t *testing.T) {
 			MaxFileSize:      100 * 1024 * 1024,
 		}
 
-		oldStdout := os.Stdout
-		defer func() { os.Stdout = oldStdout }()
-		r, w, _ := os.Pipe()
-		os.Stdout = w
+		var runErr error
+		output := captureStdout(t, func() {
+			runErr = run(config)
+		})
 
-		err = run(config)
-
-		w.Close()
-		os.Stdout = oldStdout
-
-		if err != nil {
-			t.Errorf("run() error: %v", err)
+		if runErr != nil {
+			t.Errorf("run() error: %v", runErr)
 		}
-
-		var buf bytes.Buffer
-		buf.ReadFrom(r)
-		output := buf.String()
-
 		if !strings.Contains(output, "main.go") {
 			t.Error("Stdout should contain main.go")
 		}
@@ -106,19 +113,9 @@ func TestRun(t *testing.T) {
 }
 
 func TestDisplayVersion(t *testing.T) {
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	displayVersion()
-
-	w.Close()
-	os.Stdout = oldStdout
-
-	var buf bytes.Buffer
-	buf.ReadFrom(r)
-	output := buf.String()
+	output := captureStdout(t, func() {
+		displayVersion()
+	})
 
 	if !strings.Contains(output, "code2md") {
 		t.Error("Output should contain 'code2md'")
@@ -127,19 +124,9 @@ func TestDisplayVersion(t *testing.T) {
 
 func TestDisplayUsageInstructions(t *testing.T) {
 	t.Run("with nil config", func(t *testing.T) {
-		oldStdout := os.Stdout
-		defer func() { os.Stdout = oldStdout }()
-		r, w, _ := os.Pipe()
-		os.Stdout = w
-
-		displayUsageInstructions(nil, false)
-
-		w.Close()
-		os.Stdout = oldStdout
-
-		var buf bytes.Buffer
-		buf.ReadFrom(r)
-		output := buf.String()
+		output := captureStdout(t, func() {
+			displayUsageInstructions(nil, false)
+		})
 
 		if !strings.Contains(output, "Usage:") {
 			t.Error("Output should contain usage instructions")
@@ -154,19 +141,9 @@ func TestDisplayUsageInstructions(t *testing.T) {
 			AllowedLanguages: map[string]bool{".go": true, ".js": false},
 		}
 
-		oldStdout := os.Stdout
-		defer func() { os.Stdout = oldStdout }()
-		r, w, _ := os.Pipe()
-		os.Stdout = w
-
-		displayUsageInstructions(config, false)
-
-		w.Close()
-		os.Stdout = oldStdout
-
-		var buf bytes.Buffer
-		buf.ReadFrom(r)
-		output := buf.String()
+		output := captureStdout(t, func() {
+			displayUsageInstructions(config, false)
+		})
 
 		if !strings.Contains(output, "By default") {
 			t.Error("Output should show language info with valid config")
@@ -174,19 +151,9 @@ func TestDisplayUsageInstructions(t *testing.T) {
 	})
 
 	t.Run("shows error when requested", func(t *testing.T) {
-		oldStdout := os.Stdout
-		defer func() { os.Stdout = oldStdout }()
-		r, w, _ := os.Pipe()
-		os.Stdout = w
-
-		displayUsageInstructions(nil, true)
-
-		w.Close()
-		os.Stdout = oldStdout
-
-		var buf bytes.Buffer
-		buf.ReadFrom(r)
-		output := buf.String()
+		output := captureStdout(t, func() {
+			displayUsageInstructions(nil, true)
+		})
 
 		if !strings.Contains(output, "Error:") {
 			t.Error("Output should contain error message")

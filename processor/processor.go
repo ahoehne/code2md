@@ -87,18 +87,26 @@ func WriteMarkdown(path string, displayPath string, output io.Writer, lang strin
 		return fmt.Errorf("writing header for %s: %w", path, err)
 	}
 
-	content, err := os.ReadFile(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("reading file %s: %w", path, err)
 	}
+	defer file.Close()
 
-	if _, err := output.Write(content); err != nil {
+	if _, err := io.Copy(output, file); err != nil {
 		return fmt.Errorf("writing content from %s: %w", path, err)
 	}
 
 	suffix := ""
 	if lang != "md" {
-		if len(content) == 0 || content[len(content)-1] != '\n' {
+		needsNewline := true
+		if fileInfo.Size() > 0 {
+			lastByte := make([]byte, 1)
+			if _, err := file.ReadAt(lastByte, fileInfo.Size()-1); err == nil {
+				needsNewline = lastByte[0] != '\n'
+			}
+		}
+		if needsNewline {
 			suffix = "\n"
 		}
 		suffix += "```"

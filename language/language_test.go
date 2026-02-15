@@ -6,6 +6,17 @@ import (
 	"testing"
 )
 
+func langMap(enabled ...string) map[string]bool {
+	m := make(map[string]bool)
+	for k := range supportedLanguages {
+		m[k] = false
+	}
+	for _, e := range enabled {
+		m[e] = true
+	}
+	return m
+}
+
 func TestIsDockerfile(t *testing.T) {
 	tests := []struct {
 		filename string
@@ -161,101 +172,25 @@ func TestGetMarkdownLanguage(t *testing.T) {
 }
 
 func TestParseLanguages(t *testing.T) {
+	defaultsExpected := make(map[string]bool)
+	for k, v := range supportedLanguages {
+		defaultsExpected[k] = v
+	}
+
 	tests := []struct {
 		name     string
 		input    string
 		expected map[string]bool
 	}{
-		{
-			name:  "empty string uses defaults",
-			input: "",
-			expected: map[string]bool{
-				".go": true, ".php": true, ".js": true, ".ts": true,
-				".py": true, ".sh": true, ".java": true, ".dockerfile": true,
-				".md": false, ".html": false, ".scss": false, ".css": false,
-				".json": false, ".yaml": false, ".yml": false, ".xml": false,
-			},
-		},
-		{
-			name:  "single language",
-			input: ".go",
-			expected: map[string]bool{
-				".go": true, ".php": false, ".js": false, ".ts": false,
-				".py": false, ".sh": false, ".java": false, ".dockerfile": false,
-				".md": false, ".html": false, ".scss": false, ".css": false,
-				".json": false, ".yaml": false, ".yml": false, ".xml": false,
-			},
-		},
-		{
-			name:  "multiple languages",
-			input: ".go,.js,.php",
-			expected: map[string]bool{
-				".go": true, ".php": true, ".js": true, ".ts": false,
-				".py": false, ".sh": false, ".java": false, ".dockerfile": false,
-				".md": false, ".html": false, ".scss": false, ".css": false,
-				".json": false, ".yaml": false, ".yml": false, ".xml": false,
-			},
-		},
-		{
-			name:  "languages without dots",
-			input: "go,js",
-			expected: map[string]bool{
-				".go": true, ".js": true, ".php": false, ".ts": false,
-				".py": false, ".sh": false, ".java": false, ".dockerfile": false,
-				".md": false, ".html": false, ".scss": false, ".css": false,
-				".json": false, ".yaml": false, ".yml": false, ".xml": false,
-			},
-		},
-		{
-			name:  "uppercase languages",
-			input: "GO,JS",
-			expected: map[string]bool{
-				".go": true, ".js": true, ".php": false, ".ts": false,
-				".py": false, ".sh": false, ".java": false, ".dockerfile": false,
-				".md": false, ".html": false, ".scss": false, ".css": false,
-				".json": false, ".yaml": false, ".yml": false, ".xml": false,
-			},
-		},
-		{
-			name:  "languages with spaces",
-			input: " go , js ",
-			expected: map[string]bool{
-				".go": true, ".js": true, ".php": false, ".ts": false,
-				".py": false, ".sh": false, ".java": false, ".dockerfile": false,
-				".md": false, ".html": false, ".scss": false, ".css": false,
-				".json": false, ".yaml": false, ".yml": false, ".xml": false,
-			},
-		},
-		{
-			name:  "unsupported language ignored",
-			input: "go,ruby,js",
-			expected: map[string]bool{
-				".go": true, ".js": true, ".php": false, ".ts": false,
-				".py": false, ".sh": false, ".java": false, ".dockerfile": false,
-				".md": false, ".html": false, ".scss": false, ".css": false,
-				".json": false, ".yaml": false, ".yml": false, ".xml": false,
-			},
-		},
-		{
-			name:  "dockerfile explicitly enabled",
-			input: "dockerfile",
-			expected: map[string]bool{
-				".go": false, ".js": false, ".php": false, ".ts": false,
-				".py": false, ".sh": false, ".java": false, ".dockerfile": true,
-				".md": false, ".html": false, ".scss": false, ".css": false,
-				".json": false, ".yaml": false, ".yml": false, ".xml": false,
-			},
-		},
-		{
-			name:  "dockerfile uppercase",
-			input: "DOCKERFILE",
-			expected: map[string]bool{
-				".go": false, ".js": false, ".php": false, ".ts": false,
-				".py": false, ".sh": false, ".java": false, ".dockerfile": true,
-				".md": false, ".html": false, ".scss": false, ".css": false,
-				".json": false, ".yaml": false, ".yml": false, ".xml": false,
-			},
-		},
+		{"empty string uses defaults", "", defaultsExpected},
+		{"single language", ".go", langMap(".go")},
+		{"multiple languages", ".go,.js,.php", langMap(".go", ".js", ".php")},
+		{"languages without dots", "go,js", langMap(".go", ".js")},
+		{"uppercase languages", "GO,JS", langMap(".go", ".js")},
+		{"languages with spaces", " go , js ", langMap(".go", ".js")},
+		{"unsupported language ignored", "go,ruby,js", langMap(".go", ".js")},
+		{"dockerfile explicitly enabled", "dockerfile", langMap(".dockerfile")},
+		{"dockerfile uppercase", "DOCKERFILE", langMap(".dockerfile")},
 	}
 
 	for _, tt := range tests {

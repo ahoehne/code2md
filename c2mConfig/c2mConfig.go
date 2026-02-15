@@ -66,6 +66,21 @@ func InitializeConfigFromFlags() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if *inputFolder != "" && *inputFolder != "." {
+		absInput, err := filepath.Abs(*inputFolder)
+		if err == nil {
+			absCwd, err := filepath.Abs(".")
+			if err == nil && absInput != absCwd {
+				inputGitignore, err := LoadGitignorePatterns(filepath.Join(*inputFolder, ".gitignore"))
+				if err != nil {
+					return nil, err
+				}
+				gitignorePatterns = append(gitignorePatterns, inputGitignore...)
+			}
+		}
+	}
+
 	ignorePatternsList = append(gitignorePatterns, ignorePatternsList...)
 
 	return &Config{

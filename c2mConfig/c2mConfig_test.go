@@ -9,101 +9,140 @@ import (
 	"testing"
 )
 
+func setupFlagTest(t *testing.T, args ...string) (cleanup func()) {
+	t.Helper()
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	origArgs := os.Args
+	tempDir := t.TempDir()
+	origDir, _ := os.Getwd()
+	os.Chdir(tempDir)
+	os.Args = append([]string{"cmd"}, args...)
+	return func() {
+		os.Args = origArgs
+		os.Chdir(origDir)
+	}
+}
+
+func sliceContains(slice []string, val string) bool {
+	for _, s := range slice {
+		if s == val {
+			return true
+		}
+	}
+	return false
+}
+
 func TestInitializeConfigFromFlags(t *testing.T) {
 	t.Run("default ignore patterns present when no flags passed", func(t *testing.T) {
-		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-		origArgs := os.Args
-		defer func() { os.Args = origArgs }()
-
 		tempDir := t.TempDir()
-		origDir, _ := os.Getwd()
-		os.Chdir(tempDir)
-		defer os.Chdir(origDir)
+		cleanup := setupFlagTest(t, "-i", tempDir)
+		defer cleanup()
 
-		os.Args = []string{"cmd", "-i", tempDir}
 		config, err := InitializeConfigFromFlags()
 		if err != nil {
 			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
 		}
 
-		defaults := strings.Split(defaultIgnoredPatterns, ",")
-		for _, d := range defaults {
-			found := false
-			for _, p := range config.IgnorePatterns {
-				if p == d {
-					found = true
-					break
-				}
-			}
-			if !found {
+		for _, d := range strings.Split(defaultIgnoredPatterns, ",") {
+			if !sliceContains(config.IgnorePatterns, d) {
 				t.Errorf("expected default ignore pattern %q in %v", d, config.IgnorePatterns)
 			}
 		}
 	})
 
 	t.Run("explicit ignore overrides defaults", func(t *testing.T) {
-		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-		origArgs := os.Args
-		defer func() { os.Args = origArgs }()
-
 		tempDir := t.TempDir()
-		origDir, _ := os.Getwd()
-		os.Chdir(tempDir)
-		defer os.Chdir(origDir)
+		cleanup := setupFlagTest(t, "-i", tempDir, "--ignore", "custom.txt,other.log")
+		defer cleanup()
 
-		os.Args = []string{"cmd", "-i", tempDir, "--ignore", "custom.txt,other.log"}
 		config, err := InitializeConfigFromFlags()
 		if err != nil {
 			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
 		}
 
 		for _, expected := range []string{"custom.txt", "other.log"} {
-			found := false
-			for _, p := range config.IgnorePatterns {
-				if p == expected {
-					found = true
-					break
-				}
-			}
-			if !found {
+			if !sliceContains(config.IgnorePatterns, expected) {
 				t.Errorf("expected ignore pattern %q in %v", expected, config.IgnorePatterns)
 			}
 		}
 
 		for _, d := range strings.Split(defaultIgnoredPatterns, ",") {
-			for _, p := range config.IgnorePatterns {
-				if p == d {
-					t.Errorf("default pattern %q should not be present when --ignore is explicit, got %v", d, config.IgnorePatterns)
-				}
+			if sliceContains(config.IgnorePatterns, d) {
+				t.Errorf("default pattern %q should not be present when --ignore is explicit, got %v", d, config.IgnorePatterns)
 			}
 		}
 	})
 
 	t.Run("output file added to ignore patterns", func(t *testing.T) {
-		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-		origArgs := os.Args
-		defer func() { os.Args = origArgs }()
-
 		tempDir := t.TempDir()
-		origDir, _ := os.Getwd()
-		os.Chdir(tempDir)
-		defer os.Chdir(origDir)
+		cleanup := setupFlagTest(t, "-i", tempDir, "-o", "output.md")
+		defer cleanup()
 
-		os.Args = []string{"cmd", "-i", tempDir, "-o", "output.md"}
 		config, err := InitializeConfigFromFlags()
 		if err != nil {
 			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
 		}
 
-		found := false
+		if !sliceContains(config.IgnorePatterns, "output.md") {
+			t.Errorf("expected output file 'output.md' in ignore patterns %v", config.IgnorePatterns)
+		}
+	})
+}
+
+func TestInitializeConfigFromFlags_InputFolderGitignore(t *testing.T) {
+	t.Run("loads gitignore from input folder", func(t *testing.T) {
+		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+		origArgs := os.Args
+		defer func() { os.Args = origArgs }()
+
+		cwdDir := t.TempDir()
+		inputDir := t.TempDir()
+
+		os.WriteFile(filepath.Join(cwdDir, ".gitignore"), []byte("cwd_pattern\n"), 0644)
+		os.WriteFile(filepath.Join(inputDir, ".gitignore"), []byte("input_pattern\n"), 0644)
+
+		origDir, _ := os.Getwd()
+		os.Chdir(cwdDir)
+		defer os.Chdir(origDir)
+
+		os.Args = []string{"cmd", "-i", inputDir}
+		config, err := InitializeConfigFromFlags()
+		if err != nil {
+			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
+		}
+
+		if !sliceContains(config.IgnorePatterns, "cwd_pattern") {
+			t.Errorf("expected cwd gitignore pattern in %v", config.IgnorePatterns)
+		}
+		if !sliceContains(config.IgnorePatterns, "input_pattern") {
+			t.Errorf("expected input folder gitignore pattern in %v", config.IgnorePatterns)
+		}
+	})
+
+	t.Run("does not duplicate when input is cwd", func(t *testing.T) {
+		tempDir := t.TempDir()
+		cleanup := setupFlagTest(t, "-i", ".")
+		defer cleanup()
+
+		os.WriteFile(filepath.Join(tempDir, ".gitignore"), []byte("some_pattern\n"), 0644)
+
+		origDir, _ := os.Getwd()
+		os.Chdir(tempDir)
+		defer os.Chdir(origDir)
+
+		config, err := InitializeConfigFromFlags()
+		if err != nil {
+			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
+		}
+
+		count := 0
 		for _, p := range config.IgnorePatterns {
-			if p == "output.md" {
-				found = true
-				break
+			if p == "some_pattern" {
+				count++
 			}
 		}
-		if !found {
-			t.Errorf("expected output file 'output.md' in ignore patterns %v", config.IgnorePatterns)
+		if count != 1 {
+			t.Errorf("expected pattern once, found %d times in %v", count, config.IgnorePatterns)
 		}
 	})
 }

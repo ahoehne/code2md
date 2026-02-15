@@ -1,9 +1,14 @@
 #!/bin/bash
 
+if ((BASH_VERSINFO[0] < 4)); then
+  echo "Requires bash 4+. macOS users: brew install bash, or use: make docker-buildall" >&2
+  exit 1
+fi
+
 appName="code2md"
 distDir="dist"
 
-rm -rdf "$distDir" 2>/dev/null
+rm -rf "$distDir" 2>/dev/null
 mkdir -p "$distDir" || exit 100
 
 xFlag=""
@@ -64,4 +69,10 @@ if [ "$returnStatus" -gt "0" ]; then
 fi
 
 echo "Generating Checksums"
-cd dist && sha256sum -- * > CHECKSUMS.txt && cd .. && echo "Checksums generated" && exit 0
+cd dist || exit 1
+if command -v sha256sum >/dev/null 2>&1; then
+  sha256sum -- * > CHECKSUMS.txt
+else
+  shasum -a 256 -- * > CHECKSUMS.txt
+fi
+cd .. && echo "Checksums generated" && exit 0

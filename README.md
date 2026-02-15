@@ -2,7 +2,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/ahoehne/code2md?include_prereleases)](https://github.com/ahoehne/code2md/releases)
 
 [![Go CLI Test](https://github.com/ahoehne/code2md/actions/workflows/go-tests.yaml/badge.svg)](https://github.com/ahoehne/code2md/actions/workflows/go-tests.yaml)
-[![CI Shellcheck](https://github.com/ahoehne/code2md/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/ahoehne/code2md/actions/workflows/shellcheck.yml)
+[![CI Shellcheck](https://github.com/ahoehne/code2md/actions/workflows/shellcheck.yaml/badge.svg)](https://github.com/ahoehne/code2md/actions/workflows/shellcheck.yaml)
 
 # code2md
 

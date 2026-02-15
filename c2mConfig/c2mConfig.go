@@ -29,7 +29,8 @@ func InitializeConfigFromFlags() (*Config, error) {
 	inputFolder := flag.String("input", "", "Input folder to scan")
 	outputMarkdown := flag.String("output", "", "Output Markdown file")
 	languages := flag.String("languages", "", "Comma-separated list of allowed languages (empty = use defaults)")
-	ignorePatterns := flag.String("ignore", "", "Comma-separated list of files and/or search patterns to ignore")
+	var ignorePatterns string
+	flag.StringVar(&ignorePatterns, "ignore", defaultIgnoredPatterns, "Comma-separated list of files and/or search patterns to ignore")
 	maxFileSize := flag.Int64("max-file-size", defaultMaxFileSize, "Maximum file size in bytes to process")
 	help := flag.Bool("help", false, "Show help")
 	v := flag.Bool("version", false, "Show version information")
@@ -37,7 +38,7 @@ func InitializeConfigFromFlags() (*Config, error) {
 	flag.StringVar(inputFolder, "i", "", "Input folder to scan (shorthand)")
 	flag.StringVar(outputMarkdown, "o", "", "Output Markdown file (shorthand)")
 	flag.StringVar(languages, "l", "", "languages (shorthand)")
-	flag.StringVar(ignorePatterns, "I", defaultIgnoredPatterns, "ignore patterns (shorthand)")
+	flag.StringVar(&ignorePatterns, "I", defaultIgnoredPatterns, "ignore patterns (shorthand)")
 	flag.Int64Var(maxFileSize, "m", defaultMaxFileSize, "max file size (shorthand)")
 	flag.BoolVar(help, "h", false, "help (shorthand)")
 	flag.BoolVar(v, "v", false, "version (shorthand)")
@@ -47,10 +48,14 @@ func InitializeConfigFromFlags() (*Config, error) {
 	allowedLanguages := language.ParseLanguages(*languages)
 
 	var ignorePatternsList []string
-	if *ignorePatterns == "" {
-		ignorePatternsList = []string{*outputMarkdown}
-	} else {
-		ignorePatternsList = append(strings.Split(*ignorePatterns, ","), *outputMarkdown)
+	for _, p := range strings.Split(ignorePatterns, ",") {
+		trimmed := strings.TrimSpace(p)
+		if trimmed != "" {
+			ignorePatternsList = append(ignorePatternsList, trimmed)
+		}
+	}
+	if *outputMarkdown != "" {
+		ignorePatternsList = append(ignorePatternsList, *outputMarkdown)
 	}
 
 	if allowedLanguages[".css"] || allowedLanguages[".scss"] {

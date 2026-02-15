@@ -1,11 +1,112 @@
 package c2mConfig
 
 import (
+	"flag"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
+
+func TestInitializeConfigFromFlags(t *testing.T) {
+	t.Run("default ignore patterns present when no flags passed", func(t *testing.T) {
+		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+		origArgs := os.Args
+		defer func() { os.Args = origArgs }()
+
+		tempDir := t.TempDir()
+		origDir, _ := os.Getwd()
+		os.Chdir(tempDir)
+		defer os.Chdir(origDir)
+
+		os.Args = []string{"cmd", "-i", tempDir}
+		config, err := InitializeConfigFromFlags()
+		if err != nil {
+			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
+		}
+
+		defaults := strings.Split(defaultIgnoredPatterns, ",")
+		for _, d := range defaults {
+			found := false
+			for _, p := range config.IgnorePatterns {
+				if p == d {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("expected default ignore pattern %q in %v", d, config.IgnorePatterns)
+			}
+		}
+	})
+
+	t.Run("explicit ignore overrides defaults", func(t *testing.T) {
+		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+		origArgs := os.Args
+		defer func() { os.Args = origArgs }()
+
+		tempDir := t.TempDir()
+		origDir, _ := os.Getwd()
+		os.Chdir(tempDir)
+		defer os.Chdir(origDir)
+
+		os.Args = []string{"cmd", "-i", tempDir, "--ignore", "custom.txt,other.log"}
+		config, err := InitializeConfigFromFlags()
+		if err != nil {
+			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
+		}
+
+		for _, expected := range []string{"custom.txt", "other.log"} {
+			found := false
+			for _, p := range config.IgnorePatterns {
+				if p == expected {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("expected ignore pattern %q in %v", expected, config.IgnorePatterns)
+			}
+		}
+
+		for _, d := range strings.Split(defaultIgnoredPatterns, ",") {
+			for _, p := range config.IgnorePatterns {
+				if p == d {
+					t.Errorf("default pattern %q should not be present when --ignore is explicit, got %v", d, config.IgnorePatterns)
+				}
+			}
+		}
+	})
+
+	t.Run("output file added to ignore patterns", func(t *testing.T) {
+		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+		origArgs := os.Args
+		defer func() { os.Args = origArgs }()
+
+		tempDir := t.TempDir()
+		origDir, _ := os.Getwd()
+		os.Chdir(tempDir)
+		defer os.Chdir(origDir)
+
+		os.Args = []string{"cmd", "-i", tempDir, "-o", "output.md"}
+		config, err := InitializeConfigFromFlags()
+		if err != nil {
+			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
+		}
+
+		found := false
+		for _, p := range config.IgnorePatterns {
+			if p == "output.md" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("expected output file 'output.md' in ignore patterns %v", config.IgnorePatterns)
+		}
+	})
+}
 
 func TestIsConfigValid(t *testing.T) {
 	tests := []struct {

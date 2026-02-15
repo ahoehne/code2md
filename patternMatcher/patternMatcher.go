@@ -25,7 +25,7 @@ func CompilePatterns(patterns []string) []CompiledPattern {
 
 		cp := CompiledPattern{original: pattern}
 
-		if strings.HasPrefix(pattern, "/") && strings.HasSuffix(pattern, "/") {
+		if strings.HasPrefix(pattern, "/") && !strings.Contains(pattern, "*") {
 			cp.isSlashPrefix = true
 			cp.prefix = strings.TrimPrefix(pattern, "/")
 		} else if strings.HasSuffix(pattern, "/") {
@@ -51,8 +51,15 @@ func IsPathIgnored(path string, patterns []CompiledPattern) bool {
 			return true
 		}
 
-		if pattern.isSlashPrefix && strings.HasPrefix(path, pattern.prefix) {
-			return true
+		if pattern.isSlashPrefix {
+			withSlash := pattern.prefix
+			if !strings.HasSuffix(withSlash, "/") {
+				withSlash += "/"
+			}
+			if strings.HasPrefix(path, withSlash) ||
+			path == strings.TrimSuffix(withSlash, "/") {
+				return true
+			}
 		}
 
 		if pattern.isDirPrefix && strings.HasPrefix(path, pattern.prefix) {

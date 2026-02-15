@@ -35,6 +35,10 @@ func TestPathPatternMatching(t *testing.T) {
 		{"slash prefix nested match", "example/nested/file.txt", "/example/", true},
 		{"slash prefix mismatch", "example.txt", "/example/", false},
 		{"slash prefix other dir", "other/file.txt", "/example/", false},
+		{"slash prefix no trailing slash file", "vendor/file.go", "/vendor", true},
+		{"slash prefix no trailing slash nested", "vendor/pkg/lib.go", "/vendor", true},
+		{"slash prefix no trailing slash exact", "vendor", "/vendor", true},
+		{"slash prefix no trailing slash mismatch", "src/vendor/file.go", "/vendor", false},
 	}
 
 	for _, tt := range tests {
@@ -74,7 +78,7 @@ func TestPathIgnoring(t *testing.T) {
 }
 
 func TestSlashPrefixPatterns(t *testing.T) {
-	patterns := CompilePatterns([]string{"/vendor/", "/node_modules/"})
+	patterns := CompilePatterns([]string{"/vendor/", "/node_modules/", "/build"})
 	tests := []struct {
 		name string
 		path string
@@ -84,6 +88,9 @@ func TestSlashPrefixPatterns(t *testing.T) {
 		{"node_modules root", "node_modules/lib/index.js", true},
 		{"nested vendor allowed", "src/vendor/file.go", false},
 		{"other directory", "src/main.go", false},
+		{"build no trailing slash", "build/output.js", true},
+		{"build exact", "build", true},
+		{"nested build allowed", "src/build/output.js", false},
 	}
 
 	for _, tt := range tests {
@@ -96,10 +103,10 @@ func TestSlashPrefixPatterns(t *testing.T) {
 }
 
 func TestCompiledPatterns(t *testing.T) {
-	patterns := CompilePatterns([]string{"*.txt", "ignore/", "temp/*.log", "**.min.css", "/vendor/"})
+	patterns := CompilePatterns([]string{"*.txt", "ignore/", "temp/*.log", "**.min.css", "/vendor/", "/build"})
 
-	if len(patterns) != 5 {
-		t.Errorf("Expected 5 compiled patterns, got %d", len(patterns))
+	if len(patterns) != 6 {
+		t.Errorf("Expected 6 compiled patterns, got %d", len(patterns))
 	}
 
 	for _, p := range patterns {
@@ -126,6 +133,13 @@ func TestCompiledPatterns(t *testing.T) {
 			}
 			if p.prefix != "vendor/" {
 				t.Errorf("/vendor/ prefix should be 'vendor/', got %q", p.prefix)
+			}
+		case "/build":
+			if !p.isSlashPrefix {
+				t.Error("/build should be marked as slash prefix")
+			}
+			if p.prefix != "build" {
+				t.Errorf("/build prefix should be 'build', got %q", p.prefix)
 			}
 		}
 	}

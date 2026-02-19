@@ -181,24 +181,24 @@ func TestLoadGitignorePatterns(t *testing.T) {
 			t.Fatalf("Failed to write .gitignore file: %v", err)
 		}
 
-		patterns, err := LoadGitignorePatterns(gitignorePath)
+		patterns, err := loadGitignorePatterns(gitignorePath)
 		if err != nil {
-			t.Errorf("LoadGitignorePatterns() error: %v", err)
+			t.Errorf("loadGitignorePatterns() error: %v", err)
 		}
 
 		expected := []string{"*.txt", "*.log", "spaced"}
 		if !reflect.DeepEqual(patterns, expected) {
-			t.Errorf("LoadGitignorePatterns() = %v; want %v", patterns, expected)
+			t.Errorf("loadGitignorePatterns() = %v; want %v", patterns, expected)
 		}
 	})
 
 	t.Run("non-existent file returns empty slice", func(t *testing.T) {
-		patterns, err := LoadGitignorePatterns("/nonexistent/.gitignore")
+		patterns, err := loadGitignorePatterns("/nonexistent/.gitignore")
 		if err != nil {
-			t.Errorf("LoadGitignorePatterns() should not error on non-existent file: %v", err)
+			t.Errorf("loadGitignorePatterns() should not error on non-existent file: %v", err)
 		}
 		if len(patterns) != 0 {
-			t.Errorf("LoadGitignorePatterns() = %v; want empty slice", patterns)
+			t.Errorf("loadGitignorePatterns() = %v; want empty slice", patterns)
 		}
 	})
 
@@ -214,7 +214,7 @@ func TestLoadGitignorePatterns(t *testing.T) {
 		os.Chmod(gitignorePath, 0000)
 		defer os.Chmod(gitignorePath, 0644)
 
-		_, err = LoadGitignorePatterns(gitignorePath)
+		_, err = loadGitignorePatterns(gitignorePath)
 		if err == nil {
 			t.Skip("Test requires permission denied error, skipping on systems that allow root access")
 		}
@@ -229,12 +229,12 @@ func TestLoadGitignorePatterns(t *testing.T) {
 			t.Fatalf("Failed to write .gitignore file: %v", err)
 		}
 
-		patterns, err := LoadGitignorePatterns(gitignorePath)
+		patterns, err := loadGitignorePatterns(gitignorePath)
 		if err != nil {
-			t.Errorf("LoadGitignorePatterns() error: %v", err)
+			t.Errorf("loadGitignorePatterns() error: %v", err)
 		}
 		if len(patterns) != 0 {
-			t.Errorf("LoadGitignorePatterns() = %v; want empty slice", patterns)
+			t.Errorf("loadGitignorePatterns() = %v; want empty slice", patterns)
 		}
 	})
 
@@ -248,12 +248,12 @@ func TestLoadGitignorePatterns(t *testing.T) {
 			t.Fatalf("Failed to write .gitignore file: %v", err)
 		}
 
-		patterns, err := LoadGitignorePatterns(gitignorePath)
+		patterns, err := loadGitignorePatterns(gitignorePath)
 		if err != nil {
-			t.Errorf("LoadGitignorePatterns() error: %v", err)
+			t.Errorf("loadGitignorePatterns() error: %v", err)
 		}
 		if len(patterns) != 0 {
-			t.Errorf("LoadGitignorePatterns() = %v; want empty slice", patterns)
+			t.Errorf("loadGitignorePatterns() = %v; want empty slice", patterns)
 		}
 	})
 }

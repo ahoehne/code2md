@@ -62,7 +62,7 @@ func InitializeConfigFromFlags() (*Config, error) {
 		ignorePatternsList = append(ignorePatternsList, "**.min.css")
 	}
 
-	gitignorePatterns, err := LoadGitignorePatterns(filepath.Join(".", ".gitignore"))
+	gitignorePatterns, err := loadGitignorePatterns(filepath.Join(".", ".gitignore"))
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func InitializeConfigFromFlags() (*Config, error) {
 		if err == nil {
 			absCwd, err := filepath.Abs(".")
 			if err == nil && absInput != absCwd {
-				inputGitignore, err := LoadGitignorePatterns(filepath.Join(*inputFolder, ".gitignore"))
+				inputGitignore, err := loadGitignorePatterns(filepath.Join(*inputFolder, ".gitignore"))
 				if err != nil {
 					return nil, err
 				}
@@ -99,7 +99,7 @@ func IsConfigValid(config *Config) bool {
 	return config != nil && config.InputFolder != "" && config.MaxFileSize > 0
 }
 
-func LoadGitignorePatterns(path string) ([]string, error) {
+func loadGitignorePatterns(path string) ([]string, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {

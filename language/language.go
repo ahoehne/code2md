@@ -128,20 +128,3 @@ func GetInactiveLanguages(allowedLanguages map[string]bool) []string {
 	return inactive
 }
 
-func GetDefaultLanguages() []string {
-	var defaults []string
-	for lang, defaultEnabled := range supportedLanguages {
-		if defaultEnabled {
-			defaults = append(defaults, strings.TrimPrefix(lang, "."))
-		}
-	}
-	return defaults
-}
-
-func GetSupportedLanguages() []string {
-	var languages []string
-	for lang := range supportedLanguages {
-		languages = append(languages, strings.TrimPrefix(lang, "."))
-	}
-	return languages
-}

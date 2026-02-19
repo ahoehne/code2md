@@ -9,6 +9,8 @@ import (
 	"testing"
 )
 
+const testMaxFileSize = 100 * 1024 * 1024
+
 func TestWriteMarkdown(t *testing.T) {
 	t.Run("writes go file with code fence", func(t *testing.T) {
 		tempDir := t.TempDir()
@@ -21,9 +23,9 @@ func TestWriteMarkdown(t *testing.T) {
 		}
 
 		var output bytes.Buffer
-		err = WriteMarkdown(inputFile, inputFile, &output, "go", 100*1024*1024)
+		err = writeMarkdown(inputFile, inputFile, &output, "go", testMaxFileSize)
 		if err != nil {
-			t.Errorf("WriteMarkdown() error: %v", err)
+			t.Errorf("writeMarkdown() error: %v", err)
 		}
 
 		contentStr := output.String()
@@ -53,9 +55,9 @@ func TestWriteMarkdown(t *testing.T) {
 		}
 
 		var output bytes.Buffer
-		err = WriteMarkdown(inputFile, inputFile, &output, "md", 100*1024*1024)
+		err = writeMarkdown(inputFile, inputFile, &output, "md", testMaxFileSize)
 		if err != nil {
-			t.Errorf("WriteMarkdown() error: %v", err)
+			t.Errorf("writeMarkdown() error: %v", err)
 		}
 
 		contentStr := output.String()
@@ -82,9 +84,9 @@ func TestWriteMarkdown(t *testing.T) {
 		}
 
 		var output bytes.Buffer
-		err = WriteMarkdown(inputFile, inputFile, &output, "go", 100)
+		err = writeMarkdown(inputFile, inputFile, &output, "go", 100)
 		if err != nil {
-			t.Errorf("WriteMarkdown() should not error for large files: %v", err)
+			t.Errorf("writeMarkdown() should not error for large files: %v", err)
 		}
 
 		if output.Len() != 0 {
@@ -102,9 +104,9 @@ func TestWriteMarkdown(t *testing.T) {
 		}
 
 		var output bytes.Buffer
-		err = WriteMarkdown(inputFile, inputFile, &output, "go", 100*1024*1024)
+		err = writeMarkdown(inputFile, inputFile, &output, "go", testMaxFileSize)
 		if err != nil {
-			t.Errorf("WriteMarkdown() error: %v", err)
+			t.Errorf("writeMarkdown() error: %v", err)
 		}
 
 		contentStr := output.String()
@@ -126,9 +128,9 @@ func TestWriteMarkdown(t *testing.T) {
 		}
 
 		var output bytes.Buffer
-		err = WriteMarkdown(inputFile, "test.go", &output, "go", 100*1024*1024)
+		err = writeMarkdown(inputFile, "test.go", &output, "go", testMaxFileSize)
 		if err != nil {
-			t.Errorf("WriteMarkdown() error: %v", err)
+			t.Errorf("writeMarkdown() error: %v", err)
 		}
 
 		contentStr := output.String()
@@ -142,9 +144,9 @@ func TestWriteMarkdown(t *testing.T) {
 
 	t.Run("handles non-existent file", func(t *testing.T) {
 		var output bytes.Buffer
-		err := WriteMarkdown("/tmp/nonexistent/file.go", "file.go", &output, "go", 100*1024*1024)
+		err := writeMarkdown("/tmp/nonexistent/file.go", "file.go", &output, "go", testMaxFileSize)
 		if err == nil {
-			t.Error("WriteMarkdown() should error for non-existent file")
+			t.Error("writeMarkdown() should error for non-existent file")
 		}
 	})
 }
@@ -167,7 +169,7 @@ func TestProcessDirectory(t *testing.T) {
 			AllowedLanguages: map[string]bool{".go": true},
 			AllowedFileNames: map[string]bool{"go.mod": true},
 			IgnorePatterns:   patternMatcher.CompilePatterns([]string{}),
-			MaxFileSize:      100 * 1024 * 1024,
+			MaxFileSize:      testMaxFileSize,
 		}
 
 		err = ProcessDirectory(opts, &output)
@@ -202,7 +204,7 @@ func TestProcessDirectory(t *testing.T) {
 			AllowedLanguages: map[string]bool{".go": true, ".txt": true},
 			AllowedFileNames: map[string]bool{},
 			IgnorePatterns:   patternMatcher.CompilePatterns([]string{"*.txt"}),
-			MaxFileSize:      100 * 1024 * 1024,
+			MaxFileSize:      testMaxFileSize,
 		}
 
 		err = ProcessDirectory(opts, &output)
@@ -229,7 +231,7 @@ func TestProcessDirectory(t *testing.T) {
 			AllowedLanguages: map[string]bool{".go": true},
 			AllowedFileNames: map[string]bool{},
 			IgnorePatterns:   patternMatcher.CompilePatterns([]string{}),
-			MaxFileSize:      100 * 1024 * 1024,
+			MaxFileSize:      testMaxFileSize,
 		}
 
 		err := ProcessDirectory(opts, &output)
@@ -248,7 +250,7 @@ func TestProcessDirectory(t *testing.T) {
 			AllowedLanguages: map[string]bool{".go": true},
 			AllowedFileNames: map[string]bool{},
 			IgnorePatterns:   patternMatcher.CompilePatterns([]string{}),
-			MaxFileSize:      100 * 1024 * 1024,
+			MaxFileSize:      testMaxFileSize,
 		}
 
 		err := ProcessDirectory(opts, &output)
@@ -276,7 +278,7 @@ func TestProcessDirectory(t *testing.T) {
 			AllowedLanguages: map[string]bool{".go": true},
 			AllowedFileNames: map[string]bool{},
 			IgnorePatterns:   patternMatcher.CompilePatterns([]string{"vendor/"}),
-			MaxFileSize:      100 * 1024 * 1024,
+			MaxFileSize:      testMaxFileSize,
 		}
 
 		err = ProcessDirectory(opts, &output)

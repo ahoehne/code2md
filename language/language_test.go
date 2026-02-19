@@ -361,35 +361,3 @@ func TestGetInactiveLanguages(t *testing.T) {
 	})
 }
 
-func TestGetDefaultLanguages(t *testing.T) {
-	defaults := GetDefaultLanguages()
-
-	expectedDefaults := []string{"php", "go", "js", "ts", "py", "sh", "java", "dockerfile"}
-	sort.Strings(defaults)
-	sort.Strings(expectedDefaults)
-
-	if len(defaults) != len(expectedDefaults) {
-		t.Errorf("GetDefaultLanguages() returned %d languages; want %d", len(defaults), len(expectedDefaults))
-	}
-
-	if !reflect.DeepEqual(defaults, expectedDefaults) {
-		t.Errorf("GetDefaultLanguages() = %v; want %v", defaults, expectedDefaults)
-	}
-}
-
-func TestGetSupportedLanguages(t *testing.T) {
-	supported := GetSupportedLanguages()
-
-	expectedSupported := []string{"php", "go", "js", "ts", "py", "sh", "java", "dockerfile", "md", "html", "scss", "css", "json", "yaml", "yml", "xml"}
-
-	if len(supported) != len(expectedSupported) {
-		t.Errorf("GetSupportedLanguages() returned %d languages; want %d", len(supported), len(expectedSupported))
-	}
-
-	sort.Strings(supported)
-	sort.Strings(expectedSupported)
-
-	if !reflect.DeepEqual(supported, expectedSupported) {
-		t.Errorf("GetSupportedLanguages() = %v; want %v", supported, expectedSupported)
-	}
-}

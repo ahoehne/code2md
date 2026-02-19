@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 type Options struct {
@@ -46,7 +45,7 @@ func ProcessDirectory(opts Options, output io.Writer) error {
 		if !d.IsDir() && language.IsFileAllowed(d.Name(), opts.AllowedLanguages, opts.AllowedFileNames) {
 			found = true
 			lang := language.GetMarkdownLanguage(d.Name(), opts.AllowedFileNames)
-			return WriteMarkdown(path, relPath, output, lang, opts.MaxFileSize)
+			return writeMarkdown(path, relPath, output, lang, opts.MaxFileSize)
 		}
 
 		return nil
@@ -63,7 +62,7 @@ func ProcessDirectory(opts Options, output io.Writer) error {
 	return nil
 }
 
-func WriteMarkdown(path string, displayPath string, output io.Writer, lang string, maxFileSize int64) error {
+func writeMarkdown(path string, displayPath string, output io.Writer, lang string, maxFileSize int64) error {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return fmt.Errorf("stating file %s: %w", path, err)
@@ -74,17 +73,14 @@ func WriteMarkdown(path string, displayPath string, output io.Writer, lang strin
 		return nil
 	}
 
-	var buf strings.Builder
-	buf.WriteString("# ")
-	buf.WriteString(displayPath)
-	buf.WriteString("\n")
-
-	if lang != "md" {
-		buf.WriteString("```" + lang + "\n")
+	if _, err := io.WriteString(output, "# "+displayPath+"\n"); err != nil {
+		return fmt.Errorf("writing header for %s: %w", path, err)
 	}
 
-	if _, err := io.WriteString(output, buf.String()); err != nil {
-		return fmt.Errorf("writing header for %s: %w", path, err)
+	if lang != "md" {
+		if _, err := io.WriteString(output, "```"+lang+"\n"); err != nil {
+			return fmt.Errorf("writing header for %s: %w", path, err)
+		}
 	}
 
 	file, err := os.Open(path)

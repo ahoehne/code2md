@@ -3,9 +3,11 @@ name: CI Shellcheck
 on:
   push:
     branches: [ "main" ]
+  workflow_call:  # allows other workflows to call this
+  workflow_dispatch:  # allows manual run from the Actions tab
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -14,9 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Install Shellcheck
-        # not needed in gh actions, but when running locally via act
+      - name: Install Shellcheck (act only)
+        if: ${{ env.ACT }}
         run: sudo apt update && sudo apt install shellcheck
 
-      - name: Run shellcheck of *.sh
-        run: shellcheck *.sh
+      - name: Run shellcheck on any *.sh file
+        run: find . -name "*.sh" -not -path "./.git/*" -print0 | xargs -r -0 shellcheck

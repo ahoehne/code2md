@@ -15,20 +15,20 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-20s %s\n", $$1, $$2}'
 
 build: ## Build for current platform (dist/)
-	mkdir -p dist && go test ./... && go mod tidy && go build -v -o "dist/${appName}-${GOOS}-${GOARCH}${fileExtension}"
+	mkdir -p dist && go test -race ./... && go mod tidy && go build -v -o "dist/${appName}-${GOOS}-${GOARCH}${fileExtension}"
 buildall: ## Build for all platforms
-	go test ./... && ./build-all.sh
+	go test -race ./... && ./build-all.sh
 docker-buildall: ## Build all platforms via Docker
-	docker run --rm -it -v "${PWD}":/usr/src/code2md -w /usr/src/code2md "golang:${goVersion}" bash -c "git config --global --add safe.directory /usr/src/code2md && go test ./... && ./build-all.sh && chown -R "${myUid}:${myGid}" dist"
+	docker run --rm -it -v "${PWD}":/usr/src/code2md -w /usr/src/code2md "golang:${goVersion}" bash -c "git config --global --add safe.directory /usr/src/code2md && go test -race ./... && ./build-all.sh && chown -R "${myUid}:${myGid}" dist"
 
 coverage: ## Generate HTML coverage report (cov/)
 	if [ -d cov ]; then rm -rf cov; fi
 	mkdir -p cov
-	go test -coverprofile=cov/coverage.out ./...
+	go test -race -coverprofile=cov/coverage.out ./...
 	go tool cover -html=cov/coverage.out -o cov/coverage.html
 
 test: ## Run tests with verbose output
-	go test ./... -v
+	go test -race ./... -v
 
 install: ## Install to /usr/local/bin (needs sudo)
 ifeq ($(GOOS),windows)

@@ -6,7 +6,13 @@ on:
       - 'v*.*.*'
 
 jobs:
+  test:
+    uses: ./.github/workflows/go-tests.yaml
+  shellcheck:
+    uses: ./.github/workflows/shellcheck.yaml
+
   build:
+    needs: [test, shellcheck]
     runs-on: ubuntu-latest
     permissions:
       contents: write

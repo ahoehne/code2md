@@ -87,6 +87,42 @@ func TestInitializeConfigFromFlags(t *testing.T) {
 			t.Errorf("expected output file 'output.md' in ignore patterns %v", config.IgnorePatterns)
 		}
 	})
+
+	t.Run("default yml ignore dropped when yml language enabled", func(t *testing.T) {
+		tempDir := t.TempDir()
+		cleanup := setupFlagTest(t, "-i", tempDir, "-l", "yml,go")
+		defer cleanup()
+
+		config, err := InitializeConfigFromFlags()
+		if err != nil {
+			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
+		}
+
+		if sliceContains(config.IgnorePatterns, "*.yml") {
+			t.Errorf("*.yml should be removed from defaults when yml is enabled, got %v", config.IgnorePatterns)
+		}
+		if !sliceContains(config.IgnorePatterns, "*.xml") {
+			t.Errorf("*.xml should remain when only yml is enabled, got %v", config.IgnorePatterns)
+		}
+		if !sliceContains(config.IgnorePatterns, "*.yaml") {
+			t.Errorf("*.yaml should remain when only yml is enabled, got %v", config.IgnorePatterns)
+		}
+	})
+
+	t.Run("explicit ignore preserved even when matching language is enabled", func(t *testing.T) {
+		tempDir := t.TempDir()
+		cleanup := setupFlagTest(t, "-i", tempDir, "-l", "yml", "--ignore", "*.yml")
+		defer cleanup()
+
+		config, err := InitializeConfigFromFlags()
+		if err != nil {
+			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
+		}
+
+		if !sliceContains(config.IgnorePatterns, "*.yml") {
+			t.Errorf("explicit --ignore *.yml should be preserved, got %v", config.IgnorePatterns)
+		}
+	})
 }
 
 func TestInitializeConfigFromFlags_InputFolderGitignore(t *testing.T) {

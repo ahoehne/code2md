@@ -45,15 +45,27 @@ func InitializeConfigFromFlags() (*Config, error) {
 
 	flag.Parse()
 
+	ignoreExplicitlySet := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "ignore" || f.Name == "I" {
+			ignoreExplicitlySet = true
+		}
+	})
+
 	allowedLanguages := language.ParseLanguages(*languages)
 
 	var ignorePatternsList []string
 	for _, p := range strings.Split(ignorePatterns, ",") {
 		trimmed := strings.TrimSpace(p)
-		if trimmed != "" {
-			ignorePatternsList = append(ignorePatternsList, trimmed)
+		if trimmed == "" {
+			continue
 		}
+		if !ignoreExplicitlySet && isExtensionPatternForEnabledLanguage(trimmed, allowedLanguages) {
+			continue
+		}
+		ignorePatternsList = append(ignorePatternsList, trimmed)
 	}
+
 	if *outputMarkdown != "" {
 		ignorePatternsList = append(ignorePatternsList, *outputMarkdown)
 	}
@@ -93,6 +105,13 @@ func InitializeConfigFromFlags() (*Config, error) {
 		Help:             *help,
 		Version:          *v,
 	}, nil
+}
+
+func isExtensionPatternForEnabledLanguage(pattern string, allowedLanguages map[string]bool) bool {
+	if !strings.HasPrefix(pattern, "*.") {
+		return false
+	}
+	return allowedLanguages[strings.TrimPrefix(pattern, "*")]
 }
 
 func IsConfigValid(config *Config) bool {

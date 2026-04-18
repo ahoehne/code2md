@@ -295,4 +295,32 @@ func TestProcessDirectory(t *testing.T) {
 			t.Error("Output should not contain vendor/dep.go")
 		}
 	})
+
+	t.Run("allowedFileNames bypass ignore patterns", func(t *testing.T) {
+		tempDir := t.TempDir()
+		os.WriteFile(filepath.Join(tempDir, "pom.xml"), []byte("<project/>"), 0644)
+		os.WriteFile(filepath.Join(tempDir, "other.xml"), []byte("<root/>"), 0644)
+
+		var output bytes.Buffer
+		opts := Options{
+			InputFolder:      tempDir,
+			AllowedLanguages: map[string]bool{".java": true, ".xml": false},
+			AllowedFileNames: map[string]bool{"pom.xml": true},
+			IgnorePatterns:   patternMatcher.CompilePatterns([]string{"*.xml"}),
+			MaxFileSize:      testMaxFileSize,
+		}
+
+		err := ProcessDirectory(opts, &output)
+		if err != nil {
+			t.Errorf("ProcessDirectory() error: %v", err)
+		}
+
+		contentStr := output.String()
+		if !strings.Contains(contentStr, "pom.xml") {
+			t.Error("pom.xml should bypass *.xml ignore via allowedFileNames")
+		}
+		if strings.Contains(contentStr, "other.xml") {
+			t.Error("other.xml should still be ignored")
+		}
+	})
 }

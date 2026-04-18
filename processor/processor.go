@@ -39,7 +39,9 @@ func ProcessDirectory(opts Options, output io.Writer) error {
 			if d.IsDir() {
 				return filepath.SkipDir
 			}
-			return nil
+			if !opts.AllowedFileNames[d.Name()] {
+				return nil
+			}
 		}
 
 		if !d.IsDir() && language.IsFileAllowed(d.Name(), opts.AllowedLanguages, opts.AllowedFileNames) {

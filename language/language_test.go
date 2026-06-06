@@ -136,7 +136,8 @@ func TestIsFileAllowedDockerfileDisabled(t *testing.T) {
 
 func TestGetMarkdownLanguage(t *testing.T) {
 	allowedFileNames := map[string]bool{
-		"go.mod": true,
+		"go.mod":  true,
+		"Pipfile": true,
 	}
 
 	tests := []struct {
@@ -147,6 +148,9 @@ func TestGetMarkdownLanguage(t *testing.T) {
 		{"go file", "main.go", "go"},
 		{"js file", "script.js", "js"},
 		{"go.mod special", "go.mod", "go"},
+		{"Pipfile special", "Pipfile", "toml"},
+		{"pyproject.toml", "pyproject.toml", "toml"},
+		{"build.gradle", "build.gradle", "gradle"},
 		{"Dockerfile capitalized", "Dockerfile", "dockerfile"},
 		{"dockerfile lowercase", "dockerfile", "dockerfile"},
 		{"DOCKERFILE uppercase", "DOCKERFILE", "dockerfile"},
@@ -216,15 +220,47 @@ func TestGetAllowedFileNames(t *testing.T) {
 				".php":        true,
 				".js":         true,
 				".ts":         true,
+				".py":         true,
 				".java":       true,
 				".dockerfile": true,
 			},
 			expected: map[string]bool{
-				"go.mod":        true,
-				"composer.json": true,
-				"package.json":  true,
-				"tsconfig.json": true,
-				"pom.xml":       true,
+				"go.mod":           true,
+				"composer.json":    true,
+				"package.json":     true,
+				"tsconfig.json":    true,
+				"pyproject.toml":   true,
+				"requirements.txt": true,
+				"setup.py":         true,
+				"setup.cfg":        true,
+				"Pipfile":          true,
+				"pom.xml":          true,
+				"build.gradle":     true,
+				"settings.gradle":  true,
+			},
+		},
+		{
+			name: "only python",
+			allowedLanguages: map[string]bool{
+				".py": true,
+			},
+			expected: map[string]bool{
+				"pyproject.toml":   true,
+				"requirements.txt": true,
+				"setup.py":         true,
+				"setup.cfg":        true,
+				"Pipfile":          true,
+			},
+		},
+		{
+			name: "only java includes maven and gradle",
+			allowedLanguages: map[string]bool{
+				".java": true,
+			},
+			expected: map[string]bool{
+				"pom.xml":         true,
+				"build.gradle":    true,
+				"settings.gradle": true,
 			},
 		},
 		{

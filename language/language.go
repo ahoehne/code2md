@@ -27,7 +27,17 @@ var supportedLanguages = map[string]bool{
 }
 
 var specialFileLanguages = map[string]string{
-	"go.mod": "go",
+	"go.mod":  "go",
+	"Pipfile": "toml",
+}
+
+var languageManifests = map[string][]string{
+	".php":  {"composer.json"},
+	".go":   {"go.mod"},
+	".js":   {"package.json"},
+	".ts":   {"package.json", "tsconfig.json"},
+	".py":   {"pyproject.toml", "requirements.txt", "setup.py", "setup.cfg", "Pipfile"},
+	".java": {"pom.xml", "build.gradle", "settings.gradle"},
 }
 
 func isDockerfile(filename string) bool {
@@ -69,20 +79,12 @@ func ParseLanguages(languages string) map[string]bool {
 
 func GetAllowedFileNames(allowedLanguages map[string]bool) map[string]bool {
 	allowedFileNames := make(map[string]bool)
-	if allowedLanguages[".go"] {
-		allowedFileNames["go.mod"] = true
-	}
-	if allowedLanguages[".php"] {
-		allowedFileNames["composer.json"] = true
-	}
-	if allowedLanguages[".js"] || allowedLanguages[".ts"] {
-		allowedFileNames["package.json"] = true
-	}
-	if allowedLanguages[".ts"] {
-		allowedFileNames["tsconfig.json"] = true
-	}
-	if allowedLanguages[".java"] {
-		allowedFileNames["pom.xml"] = true
+	for ext, files := range languageManifests {
+		if allowedLanguages[ext] {
+			for _, f := range files {
+				allowedFileNames[f] = true
+			}
+		}
 	}
 	return allowedFileNames
 }

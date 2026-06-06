@@ -95,6 +95,11 @@ code2md -i . -o code.md
 | `--help`          | `-h`  | Show help                                                       |
 | `--version`       | `-v`  | Show version information                                        |
 
+### Supported Languages
+
+- **On by default:** `php`, `go`, `js`, `ts`, `jsx`, `tsx`, `py`, `sh`, `java`, `c`, `h`, `cpp`, `cc`, `cxx`, `hpp`, `cs`, `rs`, `Dockerfile`
+- **Opt-in via `-l`:** `md`, `html`, `scss`, `css`, `json`, `yaml`, `yml`, `xml`, `toml`, `sql`
+
 ## Hint: getting the generated file into clipboard
 These commands copy the contents of `code.md` into the clipboard.
 

@@ -12,9 +12,19 @@ var supportedLanguages = map[string]bool{
 	".go":         true,
 	".js":         true,
 	".ts":         true,
+	".jsx":        true,
+	".tsx":        true,
 	".py":         true,
 	".sh":         true,
 	".java":       true,
+	".c":          true,
+	".h":          true,
+	".cpp":        true,
+	".cc":         true,
+	".cxx":        true,
+	".hpp":        true,
+	".cs":         true,
+	".rs":         true,
 	".dockerfile": true,
 	".md":         false,
 	".html":       false,
@@ -24,11 +34,21 @@ var supportedLanguages = map[string]bool{
 	".yaml":       false,
 	".yml":        false,
 	".xml":        false,
+	".toml":       false,
+	".sql":        false,
 }
 
 var specialFileLanguages = map[string]string{
-	"go.mod":  "go",
-	"Pipfile": "toml",
+	"go.mod":     "go",
+	"Pipfile":    "toml",
+	"Cargo.toml": "toml",
+}
+
+var extensionMarkdownLanguages = map[string]string{
+	".h":   "c",
+	".hpp": "cpp",
+	".cc":  "cpp",
+	".cxx": "cpp",
 }
 
 var languageManifests = map[string][]string{
@@ -38,6 +58,9 @@ var languageManifests = map[string][]string{
 	".ts":   {"package.json", "tsconfig.json"},
 	".py":   {"pyproject.toml", "requirements.txt", "setup.py", "setup.cfg", "Pipfile"},
 	".java": {"pom.xml", "build.gradle", "settings.gradle"},
+	".rs":   {"Cargo.toml"},
+	".jsx":  {"package.json"},
+	".tsx":  {"package.json", "tsconfig.json"},
 }
 
 func isDockerfile(filename string) bool {
@@ -94,6 +117,9 @@ func GetMarkdownLanguage(filename string, allowedFileNames map[string]bool) stri
 		return "dockerfile"
 	}
 	if lang, exists := specialFileLanguages[filename]; exists && allowedFileNames[filename] {
+		return lang
+	}
+	if lang, exists := extensionMarkdownLanguages[filepath.Ext(filename)]; exists {
 		return lang
 	}
 	lang := strings.TrimPrefix(filepath.Ext(filename), ".")

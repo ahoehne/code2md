@@ -55,6 +55,8 @@ func TestIsFileAllowed(t *testing.T) {
 		".go":         true,
 		".js":         true,
 		".ts":         true,
+		".tsx":        true,
+		".rs":         true,
 		".java":       true,
 		".json":       false,
 		".dockerfile": true,
@@ -65,6 +67,7 @@ func TestIsFileAllowed(t *testing.T) {
 		"composer.json": true,
 		"package.json":  true,
 		"pom.xml":       true,
+		"Cargo.toml":    true,
 	}
 
 	tests := []struct {
@@ -78,6 +81,9 @@ func TestIsFileAllowed(t *testing.T) {
 		{"ts file", "file.ts", true},
 		{"java file", "file.java", true},
 		{"java file uppercase", "File.java", true},
+		{"rust file", "main.rs", true},
+		{"tsx file", "App.tsx", true},
+		{"special file Cargo.toml", "Cargo.toml", true},
 		{"special file pom.xml", "pom.xml", true},
 		{"txt file not allowed", "file.txt", false},
 		{"special file go.mod", "go.mod", true},
@@ -136,8 +142,9 @@ func TestIsFileAllowedDockerfileDisabled(t *testing.T) {
 
 func TestGetMarkdownLanguage(t *testing.T) {
 	allowedFileNames := map[string]bool{
-		"go.mod":  true,
-		"Pipfile": true,
+		"go.mod":     true,
+		"Pipfile":    true,
+		"Cargo.toml": true,
 	}
 
 	tests := []struct {
@@ -149,6 +156,7 @@ func TestGetMarkdownLanguage(t *testing.T) {
 		{"js file", "script.js", "js"},
 		{"go.mod special", "go.mod", "go"},
 		{"Pipfile special", "Pipfile", "toml"},
+		{"Cargo.toml special", "Cargo.toml", "toml"},
 		{"pyproject.toml", "pyproject.toml", "toml"},
 		{"build.gradle", "build.gradle", "gradle"},
 		{"Dockerfile capitalized", "Dockerfile", "dockerfile"},
@@ -164,6 +172,17 @@ func TestGetMarkdownLanguage(t *testing.T) {
 		{"java file", "Main.java", "java"},
 		{"multi-dot extension", "file.test.js", "js"},
 		{"hidden file with extension", ".eslintrc.json", "json"},
+		{"c file", "main.c", "c"},
+		{"c header maps to c", "header.h", "c"},
+		{"cpp file", "app.cpp", "cpp"},
+		{"cpp header maps to cpp", "header.hpp", "cpp"},
+		{"cc maps to cpp", "util.cc", "cpp"},
+		{"cxx maps to cpp", "util.cxx", "cpp"},
+		{"cs file", "Program.cs", "cs"},
+		{"rust file", "main.rs", "rs"},
+		{"jsx file", "App.jsx", "jsx"},
+		{"tsx file", "App.tsx", "tsx"},
+		{"sql file", "schema.sql", "sql"},
 	}
 
 	for _, tt := range tests {
@@ -220,8 +239,11 @@ func TestGetAllowedFileNames(t *testing.T) {
 				".php":        true,
 				".js":         true,
 				".ts":         true,
+				".jsx":        true,
+				".tsx":        true,
 				".py":         true,
 				".java":       true,
+				".rs":         true,
 				".dockerfile": true,
 			},
 			expected: map[string]bool{
@@ -237,6 +259,26 @@ func TestGetAllowedFileNames(t *testing.T) {
 				"pom.xml":          true,
 				"build.gradle":     true,
 				"settings.gradle":  true,
+				"Cargo.toml":       true,
+			},
+		},
+		{
+			name: "only rust includes Cargo.toml",
+			allowedLanguages: map[string]bool{
+				".rs": true,
+			},
+			expected: map[string]bool{
+				"Cargo.toml": true,
+			},
+		},
+		{
+			name: "only tsx includes package.json and tsconfig.json",
+			allowedLanguages: map[string]bool{
+				".tsx": true,
+			},
+			expected: map[string]bool{
+				"package.json":  true,
+				"tsconfig.json": true,
 			},
 		},
 		{

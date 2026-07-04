@@ -13,9 +13,9 @@ const (
 )
 
 type Config struct {
-	InputFolder      string
-	OutputMarkdown   string
-	AllowedLanguages map[string]bool
+	InputFolder           string
+	OutputMarkdown        string
+	AllowedLanguages      map[string]bool
 	AllowedFileNames      map[string]bool
 	UserIgnorePatterns    []string
 	DefaultIgnorePatterns []string

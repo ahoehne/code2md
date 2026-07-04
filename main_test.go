@@ -35,12 +35,12 @@ func TestRun(t *testing.T) {
 		}
 
 		config := &c2mConfig.Config{
-			InputFolder:      tempDir,
-			OutputMarkdown:   "",
-			AllowedLanguages: map[string]bool{".go": true},
-			AllowedFileNames: map[string]bool{},
+			InputFolder:        tempDir,
+			OutputMarkdown:     "",
+			AllowedLanguages:   map[string]bool{".go": true},
+			AllowedFileNames:   map[string]bool{},
 			UserIgnorePatterns: []string{},
-			MaxFileSize:      100 * 1024 * 1024,
+			MaxFileSize:        100 * 1024 * 1024,
 		}
 
 		var runErr error
@@ -65,12 +65,12 @@ func TestRun(t *testing.T) {
 
 		outputFile := filepath.Join(tempDir, "output.md")
 		config := &c2mConfig.Config{
-			InputFolder:      tempDir,
-			OutputMarkdown:   outputFile,
-			AllowedLanguages: map[string]bool{".go": true},
-			AllowedFileNames: map[string]bool{},
+			InputFolder:        tempDir,
+			OutputMarkdown:     outputFile,
+			AllowedLanguages:   map[string]bool{".go": true},
+			AllowedFileNames:   map[string]bool{},
 			UserIgnorePatterns: []string{},
-			MaxFileSize:      100 * 1024 * 1024,
+			MaxFileSize:        100 * 1024 * 1024,
 		}
 
 		err = run(config)
@@ -129,12 +129,12 @@ func TestRun(t *testing.T) {
 
 		outputFile := filepath.Join(tempDir, "subdir", "nested", "output.md")
 		config := &c2mConfig.Config{
-			InputFolder:      tempDir,
-			OutputMarkdown:   outputFile,
-			AllowedLanguages: map[string]bool{".go": true},
-			AllowedFileNames: map[string]bool{},
+			InputFolder:        tempDir,
+			OutputMarkdown:     outputFile,
+			AllowedLanguages:   map[string]bool{".go": true},
+			AllowedFileNames:   map[string]bool{},
 			UserIgnorePatterns: []string{},
-			MaxFileSize:      100 * 1024 * 1024,
+			MaxFileSize:        100 * 1024 * 1024,
 		}
 
 		err = run(config)

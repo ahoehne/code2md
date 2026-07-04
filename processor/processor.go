@@ -13,8 +13,8 @@ import (
 )
 
 type Options struct {
-	InputFolder      string
-	AllowedLanguages map[string]bool
+	InputFolder           string
+	AllowedLanguages      map[string]bool
 	AllowedFileNames      map[string]bool
 	UserIgnorePatterns    []patternMatcher.CompiledPattern
 	DefaultIgnorePatterns []patternMatcher.CompiledPattern

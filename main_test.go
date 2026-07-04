@@ -39,7 +39,7 @@ func TestRun(t *testing.T) {
 			OutputMarkdown:   "",
 			AllowedLanguages: map[string]bool{".go": true},
 			AllowedFileNames: map[string]bool{},
-			IgnorePatterns:   []string{},
+			UserIgnorePatterns: []string{},
 			MaxFileSize:      100 * 1024 * 1024,
 		}
 
@@ -69,7 +69,7 @@ func TestRun(t *testing.T) {
 			OutputMarkdown:   outputFile,
 			AllowedLanguages: map[string]bool{".go": true},
 			AllowedFileNames: map[string]bool{},
-			IgnorePatterns:   []string{},
+			UserIgnorePatterns: []string{},
 			MaxFileSize:      100 * 1024 * 1024,
 		}
 
@@ -81,6 +81,42 @@ func TestRun(t *testing.T) {
 		content, _ := os.ReadFile(outputFile)
 		if !strings.Contains(string(content), "main.go") {
 			t.Error("Output file should contain main.go")
+		}
+	})
+
+	t.Run("never reads its own output file even when spelled ./out.md instead of out.md", func(t *testing.T) {
+		tempDir := t.TempDir()
+		err := os.WriteFile(filepath.Join(tempDir, "main.go"), []byte("package main\n"), 0644)
+		if err != nil {
+			t.Fatalf("Failed to create test file: %v", err)
+		}
+
+		origDir, _ := os.Getwd()
+		if err := os.Chdir(tempDir); err != nil {
+			t.Fatalf("Failed to chdir: %v", err)
+		}
+		defer os.Chdir(origDir)
+
+		config := &c2mConfig.Config{
+			InputFolder:      ".",
+			OutputMarkdown:   "./out.md",
+			AllowedLanguages: map[string]bool{".go": true, ".md": true},
+			AllowedFileNames: map[string]bool{},
+			MaxFileSize:      100 * 1024 * 1024,
+		}
+
+		for i := 0; i < 2; i++ {
+			if err := run(config); err != nil {
+				t.Fatalf("run() error on pass %d: %v", i+1, err)
+			}
+		}
+
+		content, _ := os.ReadFile(filepath.Join(tempDir, "out.md"))
+		if !strings.Contains(string(content), "main.go") {
+			t.Error("Output file should contain main.go")
+		}
+		if strings.Contains(string(content), "out.md") {
+			t.Error("Output file should never contain itself")
 		}
 	})
 
@@ -97,7 +133,7 @@ func TestRun(t *testing.T) {
 			OutputMarkdown:   outputFile,
 			AllowedLanguages: map[string]bool{".go": true},
 			AllowedFileNames: map[string]bool{},
-			IgnorePatterns:   []string{},
+			UserIgnorePatterns: []string{},
 			MaxFileSize:      100 * 1024 * 1024,
 		}
 

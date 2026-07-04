@@ -39,8 +39,14 @@ func main() {
 func run(config *c2mConfig.Config) error {
 	var err error
 	outputWriter := os.Stdout
+	absOutputPath := ""
 
 	if config.OutputMarkdown != "" {
+		absOutputPath, err = filepath.Abs(config.OutputMarkdown)
+		if err != nil {
+			return fmt.Errorf("resolving output path %s: %w", config.OutputMarkdown, err)
+		}
+
 		outputDir := filepath.Dir(config.OutputMarkdown)
 		if outputDir != "." && outputDir != "" {
 			if err := os.MkdirAll(outputDir, 0755); err != nil {
@@ -61,11 +67,13 @@ func run(config *c2mConfig.Config) error {
 
 	err = processor.ProcessDirectory(
 		processor.Options{
-			InputFolder:      config.InputFolder,
-			AllowedLanguages: config.AllowedLanguages,
-			AllowedFileNames: config.AllowedFileNames,
-			IgnorePatterns:   patternMatcher.CompilePatterns(config.IgnorePatterns),
-			MaxFileSize:      config.MaxFileSize,
+			InputFolder:           config.InputFolder,
+			AllowedLanguages:      config.AllowedLanguages,
+			AllowedFileNames:      config.AllowedFileNames,
+			UserIgnorePatterns:    patternMatcher.CompilePatterns(config.UserIgnorePatterns),
+			DefaultIgnorePatterns: patternMatcher.CompilePatterns(config.DefaultIgnorePatterns),
+			AbsOutputFilePath:     absOutputPath,
+			MaxFileSize:           config.MaxFileSize,
 		}, outputWriter,
 	)
 	if err != nil {

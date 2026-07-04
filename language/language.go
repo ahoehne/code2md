@@ -11,7 +11,11 @@ var supportedLanguages = map[string]bool{
 	".php":        true,
 	".go":         true,
 	".js":         true,
+	".mjs":        true,
+	".cjs":        true,
 	".ts":         true,
+	".mts":        true,
+	".cts":        true,
 	".jsx":        true,
 	".tsx":        true,
 	".py":         true,
@@ -23,6 +27,7 @@ var supportedLanguages = map[string]bool{
 	".cc":         true,
 	".cxx":        true,
 	".hpp":        true,
+	".hh":         true,
 	".cs":         true,
 	".rs":         true,
 	".dockerfile": true,
@@ -49,13 +54,23 @@ var extensionMarkdownLanguages = map[string]string{
 	".hpp": "cpp",
 	".cc":  "cpp",
 	".cxx": "cpp",
+	".hh":  "cpp",
+	".cs":  "csharp",
+	".mjs": "js",
+	".cjs": "js",
+	".mts": "ts",
+	".cts": "ts",
 }
 
 var languageManifests = map[string][]string{
 	".php":  {"composer.json"},
 	".go":   {"go.mod"},
 	".js":   {"package.json"},
+	".mjs":  {"package.json"},
+	".cjs":  {"package.json"},
 	".ts":   {"package.json", "tsconfig.json"},
+	".mts":  {"package.json", "tsconfig.json"},
+	".cts":  {"package.json", "tsconfig.json"},
 	".py":   {"pyproject.toml", "requirements.txt", "setup.py", "setup.cfg", "Pipfile"},
 	".java": {"pom.xml", "build.gradle", "settings.gradle"},
 	".rs":   {"Cargo.toml"},
@@ -85,6 +100,9 @@ func ParseLanguages(languages string) map[string]bool {
 	selectedLanguages := strings.Split(languages, ",")
 	for _, lang := range selectedLanguages {
 		lang = strings.TrimSpace(lang)
+		if lang == "" {
+			continue
+		}
 		if !strings.HasPrefix(lang, ".") {
 			lang = "." + lang
 		}
@@ -119,10 +137,11 @@ func GetMarkdownLanguage(filename string, allowedFileNames map[string]bool) stri
 	if lang, exists := specialFileLanguages[filename]; exists && allowedFileNames[filename] {
 		return lang
 	}
-	if lang, exists := extensionMarkdownLanguages[filepath.Ext(filename)]; exists {
+	ext := strings.ToLower(filepath.Ext(filename))
+	if lang, exists := extensionMarkdownLanguages[ext]; exists {
 		return lang
 	}
-	lang := strings.TrimPrefix(filepath.Ext(filename), ".")
+	lang := strings.TrimPrefix(ext, ".")
 	if lang == "" {
 		return "plaintext"
 	}
@@ -133,7 +152,7 @@ func IsFileAllowed(filename string, allowedLanguages, allowedFileNames map[strin
 	if allowedLanguages[".dockerfile"] && isDockerfile(filename) {
 		return true
 	}
-	return allowedFileNames[filename] || allowedLanguages[filepath.Ext(filename)]
+	return allowedFileNames[filename] || allowedLanguages[strings.ToLower(filepath.Ext(filename))]
 }
 
 func GetActiveLanguages(allowedLanguages map[string]bool) []string {
@@ -155,4 +174,3 @@ func GetInactiveLanguages(allowedLanguages map[string]bool) []string {
 	}
 	return inactive
 }
-

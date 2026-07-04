@@ -3,8 +3,6 @@ package c2mConfig
 import (
 	"flag"
 	"os"
-	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 )
@@ -44,9 +42,12 @@ func TestInitializeConfigFromFlags(t *testing.T) {
 		}
 
 		for _, d := range strings.Split(defaultIgnoredPatterns, ",") {
-			if !sliceContains(config.IgnorePatterns, d) {
-				t.Errorf("expected default ignore pattern %q in %v", d, config.IgnorePatterns)
+			if !sliceContains(config.DefaultIgnorePatterns, d) {
+				t.Errorf("expected default ignore pattern %q in %v", d, config.DefaultIgnorePatterns)
 			}
+		}
+		if len(config.UserIgnorePatterns) != 0 {
+			t.Errorf("expected no user ignore patterns, got %v", config.UserIgnorePatterns)
 		}
 	})
 
@@ -61,19 +62,19 @@ func TestInitializeConfigFromFlags(t *testing.T) {
 		}
 
 		for _, expected := range []string{"custom.txt", "other.log"} {
-			if !sliceContains(config.IgnorePatterns, expected) {
-				t.Errorf("expected ignore pattern %q in %v", expected, config.IgnorePatterns)
+			if !sliceContains(config.UserIgnorePatterns, expected) {
+				t.Errorf("expected ignore pattern %q in %v", expected, config.UserIgnorePatterns)
 			}
 		}
 
 		for _, d := range strings.Split(defaultIgnoredPatterns, ",") {
-			if sliceContains(config.IgnorePatterns, d) {
-				t.Errorf("default pattern %q should not be present when --ignore is explicit, got %v", d, config.IgnorePatterns)
+			if sliceContains(config.UserIgnorePatterns, d) || sliceContains(config.DefaultIgnorePatterns, d) {
+				t.Errorf("default pattern %q should not be present when --ignore is explicit", d)
 			}
 		}
 	})
 
-	t.Run("output file added to ignore patterns", func(t *testing.T) {
+	t.Run("output file is not turned into an ignore pattern", func(t *testing.T) {
 		tempDir := t.TempDir()
 		cleanup := setupFlagTest(t, "-i", tempDir, "-o", "output.md")
 		defer cleanup()
@@ -83,8 +84,11 @@ func TestInitializeConfigFromFlags(t *testing.T) {
 			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
 		}
 
-		if !sliceContains(config.IgnorePatterns, "output.md") {
-			t.Errorf("expected output file 'output.md' in ignore patterns %v", config.IgnorePatterns)
+		if sliceContains(config.UserIgnorePatterns, "output.md") || sliceContains(config.DefaultIgnorePatterns, "output.md") {
+			t.Errorf("output file should be excluded by path, not by pattern, got %v / %v", config.UserIgnorePatterns, config.DefaultIgnorePatterns)
+		}
+		if config.OutputMarkdown != "output.md" {
+			t.Errorf("expected OutputMarkdown 'output.md', got %q", config.OutputMarkdown)
 		}
 	})
 
@@ -98,14 +102,14 @@ func TestInitializeConfigFromFlags(t *testing.T) {
 			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
 		}
 
-		if sliceContains(config.IgnorePatterns, "*.yml") {
-			t.Errorf("*.yml should be removed from defaults when yml is enabled, got %v", config.IgnorePatterns)
+		if sliceContains(config.DefaultIgnorePatterns, "*.yml") {
+			t.Errorf("*.yml should be removed from defaults when yml is enabled, got %v", config.DefaultIgnorePatterns)
 		}
-		if !sliceContains(config.IgnorePatterns, "*.xml") {
-			t.Errorf("*.xml should remain when only yml is enabled, got %v", config.IgnorePatterns)
+		if !sliceContains(config.DefaultIgnorePatterns, "*.xml") {
+			t.Errorf("*.xml should remain when only yml is enabled, got %v", config.DefaultIgnorePatterns)
 		}
-		if !sliceContains(config.IgnorePatterns, "*.yaml") {
-			t.Errorf("*.yaml should remain when only yml is enabled, got %v", config.IgnorePatterns)
+		if !sliceContains(config.DefaultIgnorePatterns, "*.yaml") {
+			t.Errorf("*.yaml should remain when only yml is enabled, got %v", config.DefaultIgnorePatterns)
 		}
 	})
 
@@ -119,66 +123,33 @@ func TestInitializeConfigFromFlags(t *testing.T) {
 			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
 		}
 
-		if !sliceContains(config.IgnorePatterns, "*.yml") {
-			t.Errorf("explicit --ignore *.yml should be preserved, got %v", config.IgnorePatterns)
-		}
-	})
-}
-
-func TestInitializeConfigFromFlags_InputFolderGitignore(t *testing.T) {
-	t.Run("loads gitignore from input folder", func(t *testing.T) {
-		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-		origArgs := os.Args
-		defer func() { os.Args = origArgs }()
-
-		cwdDir := t.TempDir()
-		inputDir := t.TempDir()
-
-		os.WriteFile(filepath.Join(cwdDir, ".gitignore"), []byte("cwd_pattern\n"), 0644)
-		os.WriteFile(filepath.Join(inputDir, ".gitignore"), []byte("input_pattern\n"), 0644)
-
-		origDir, _ := os.Getwd()
-		os.Chdir(cwdDir)
-		defer os.Chdir(origDir)
-
-		os.Args = []string{"cmd", "-i", inputDir}
-		config, err := InitializeConfigFromFlags()
-		if err != nil {
-			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
-		}
-
-		if !sliceContains(config.IgnorePatterns, "cwd_pattern") {
-			t.Errorf("expected cwd gitignore pattern in %v", config.IgnorePatterns)
-		}
-		if !sliceContains(config.IgnorePatterns, "input_pattern") {
-			t.Errorf("expected input folder gitignore pattern in %v", config.IgnorePatterns)
+		if !sliceContains(config.UserIgnorePatterns, "*.yml") {
+			t.Errorf("explicit --ignore *.yml should be preserved, got %v", config.UserIgnorePatterns)
 		}
 	})
 
-	t.Run("does not duplicate when input is cwd", func(t *testing.T) {
+	t.Run("min.css ignored by default when css enabled", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cleanup := setupFlagTest(t, "-i", ".")
+		cleanup := setupFlagTest(t, "-i", tempDir, "-l", "css")
 		defer cleanup()
 
-		os.WriteFile(filepath.Join(tempDir, ".gitignore"), []byte("some_pattern\n"), 0644)
-
-		origDir, _ := os.Getwd()
-		os.Chdir(tempDir)
-		defer os.Chdir(origDir)
-
 		config, err := InitializeConfigFromFlags()
 		if err != nil {
 			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
 		}
 
-		count := 0
-		for _, p := range config.IgnorePatterns {
-			if p == "some_pattern" {
-				count++
-			}
+		if !sliceContains(config.DefaultIgnorePatterns, "**.min.css") {
+			t.Errorf("expected **.min.css in default ignore patterns %v", config.DefaultIgnorePatterns)
 		}
-		if count != 1 {
-			t.Errorf("expected pattern once, found %d times in %v", count, config.IgnorePatterns)
+	})
+
+	t.Run("rejects positional arguments", func(t *testing.T) {
+		tempDir := t.TempDir()
+		cleanup := setupFlagTest(t, "-i", tempDir, "stray-argument")
+		defer cleanup()
+
+		if _, err := InitializeConfigFromFlags(); err == nil {
+			t.Error("expected error for unexpected positional arguments")
 		}
 	})
 }
@@ -204,92 +175,4 @@ func TestIsConfigValid(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestLoadGitignorePatterns(t *testing.T) {
-	t.Run("valid gitignore", func(t *testing.T) {
-		tempDir := t.TempDir()
-		gitignorePath := filepath.Join(tempDir, ".gitignore")
-
-		content := "*.txt\n*.log\n# comment\n\n   \n  spaced  \n"
-		err := os.WriteFile(gitignorePath, []byte(content), 0644)
-		if err != nil {
-			t.Fatalf("Failed to write .gitignore file: %v", err)
-		}
-
-		patterns, err := loadGitignorePatterns(gitignorePath)
-		if err != nil {
-			t.Errorf("loadGitignorePatterns() error: %v", err)
-		}
-
-		expected := []string{"*.txt", "*.log", "spaced"}
-		if !reflect.DeepEqual(patterns, expected) {
-			t.Errorf("loadGitignorePatterns() = %v; want %v", patterns, expected)
-		}
-	})
-
-	t.Run("non-existent file returns empty slice", func(t *testing.T) {
-		patterns, err := loadGitignorePatterns("/nonexistent/.gitignore")
-		if err != nil {
-			t.Errorf("loadGitignorePatterns() should not error on non-existent file: %v", err)
-		}
-		if len(patterns) != 0 {
-			t.Errorf("loadGitignorePatterns() = %v; want empty slice", patterns)
-		}
-	})
-
-	t.Run("permission denied returns error", func(t *testing.T) {
-		tempDir := t.TempDir()
-		gitignorePath := filepath.Join(tempDir, ".gitignore")
-
-		err := os.WriteFile(gitignorePath, []byte("*.txt"), 0644)
-		if err != nil {
-			t.Fatalf("Failed to write .gitignore file: %v", err)
-		}
-
-		os.Chmod(gitignorePath, 0000)
-		defer os.Chmod(gitignorePath, 0644)
-
-		_, err = loadGitignorePatterns(gitignorePath)
-		if err == nil {
-			t.Skip("Test requires permission denied error, skipping on systems that allow root access")
-		}
-	})
-
-	t.Run("empty file", func(t *testing.T) {
-		tempDir := t.TempDir()
-		gitignorePath := filepath.Join(tempDir, ".gitignore")
-
-		err := os.WriteFile(gitignorePath, []byte(""), 0644)
-		if err != nil {
-			t.Fatalf("Failed to write .gitignore file: %v", err)
-		}
-
-		patterns, err := loadGitignorePatterns(gitignorePath)
-		if err != nil {
-			t.Errorf("loadGitignorePatterns() error: %v", err)
-		}
-		if len(patterns) != 0 {
-			t.Errorf("loadGitignorePatterns() = %v; want empty slice", patterns)
-		}
-	})
-
-	t.Run("only comments and whitespace", func(t *testing.T) {
-		tempDir := t.TempDir()
-		gitignorePath := filepath.Join(tempDir, ".gitignore")
-
-		content := "# comment\n\n   \n# another comment\n"
-		err := os.WriteFile(gitignorePath, []byte(content), 0644)
-		if err != nil {
-			t.Fatalf("Failed to write .gitignore file: %v", err)
-		}
-
-		patterns, err := loadGitignorePatterns(gitignorePath)
-		if err != nil {
-			t.Errorf("loadGitignorePatterns() error: %v", err)
-		}
-		if len(patterns) != 0 {
-			t.Errorf("loadGitignorePatterns() = %v; want empty slice", patterns)
-		}
-	})
 }

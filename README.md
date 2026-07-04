@@ -95,9 +95,28 @@ code2md -i . -o code.md
 | `--help`          | `-h`  | Show help                                                       |
 | `--version`       | `-v`  | Show version information                                        |
 
+### Ignoring Files
+
+Files are excluded in three ways:
+
+1. **`.gitignore` files** in the input directory (including nested ones) are respected with gitignore semantics.
+2. **`--ignore` patterns** use the same syntax and replace the built-in defaults (`*.yaml,*.yml,*.xml`).
+3. The `.git` directory and the output file itself are always skipped.
+
+Pattern syntax follows `.gitignore`:
+
+- `*.log` matches at any depth; `*` and `?` never cross `/`
+- `build` matches a file or directory named `build` at any depth
+- `build/` matches directories only
+- `/build` or `src/build` are anchored to the input directory root
+- `**` matches any number of directories (`docs/**`, `a/**/b`, `**/file.txt`)
+- `!pattern` re-includes a previously ignored file; the last matching pattern wins
+
+Language manifest files (`pom.xml`, `package.json`, `go.mod`, ...) of enabled languages bypass the built-in default patterns, but never patterns you pass via `--ignore` or `.gitignore`.
+
 ### Supported Languages
 
-- **On by default:** `php`, `go`, `js`, `ts`, `jsx`, `tsx`, `py`, `sh`, `java`, `c`, `h`, `cpp`, `cc`, `cxx`, `hpp`, `cs`, `rs`, `Dockerfile`
+- **On by default:** `php`, `go`, `js`, `mjs`, `cjs`, `ts`, `mts`, `cts`, `jsx`, `tsx`, `py`, `sh`, `java`, `c`, `h`, `cpp`, `cc`, `cxx`, `hpp`, `hh`, `cs`, `rs`, `Dockerfile`
 - **Opt-in via `-l`:** `md`, `html`, `scss`, `css`, `json`, `yaml`, `yml`, `xml`, `toml`, `sql`
 
 ## Hint: getting the generated file into clipboard

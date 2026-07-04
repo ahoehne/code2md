@@ -1,11 +1,9 @@
 package c2mConfig
 
 import (
-	"bufio"
 	"code2md/language"
 	"flag"
-	"os"
-	"path/filepath"
+	"fmt"
 	"strings"
 )
 
@@ -18,11 +16,12 @@ type Config struct {
 	InputFolder      string
 	OutputMarkdown   string
 	AllowedLanguages map[string]bool
-	AllowedFileNames map[string]bool
-	IgnorePatterns   []string
-	MaxFileSize      int64
-	Help             bool
-	Version          bool
+	AllowedFileNames      map[string]bool
+	UserIgnorePatterns    []string
+	DefaultIgnorePatterns []string
+	MaxFileSize           int64
+	Help                  bool
+	Version               bool
 }
 
 func InitializeConfigFromFlags() (*Config, error) {
@@ -45,6 +44,10 @@ func InitializeConfigFromFlags() (*Config, error) {
 
 	flag.Parse()
 
+	if flag.NArg() > 0 {
+		return nil, fmt.Errorf("unexpected arguments: %s", strings.Join(flag.Args(), " "))
+	}
+
 	ignoreExplicitlySet := false
 	flag.Visit(func(f *flag.Flag) {
 		if f.Name == "ignore" || f.Name == "I" {
@@ -54,56 +57,34 @@ func InitializeConfigFromFlags() (*Config, error) {
 
 	allowedLanguages := language.ParseLanguages(*languages)
 
-	var ignorePatternsList []string
+	var userIgnoreList []string
+	var defaultIgnoreList []string
 	for _, p := range strings.Split(ignorePatterns, ",") {
 		trimmed := strings.TrimSpace(p)
 		if trimmed == "" {
 			continue
 		}
-		if !ignoreExplicitlySet && isExtensionPatternForEnabledLanguage(trimmed, allowedLanguages) {
-			continue
+		if ignoreExplicitlySet {
+			userIgnoreList = append(userIgnoreList, trimmed)
+		} else if !isExtensionPatternForEnabledLanguage(trimmed, allowedLanguages) {
+			defaultIgnoreList = append(defaultIgnoreList, trimmed)
 		}
-		ignorePatternsList = append(ignorePatternsList, trimmed)
-	}
-
-	if *outputMarkdown != "" {
-		ignorePatternsList = append(ignorePatternsList, *outputMarkdown)
 	}
 
 	if allowedLanguages[".css"] || allowedLanguages[".scss"] {
-		ignorePatternsList = append(ignorePatternsList, "**.min.css")
+		defaultIgnoreList = append(defaultIgnoreList, "**.min.css")
 	}
-
-	gitignorePatterns, err := loadGitignorePatterns(filepath.Join(".", ".gitignore"))
-	if err != nil {
-		return nil, err
-	}
-
-	if *inputFolder != "" && *inputFolder != "." {
-		absInput, err := filepath.Abs(*inputFolder)
-		if err == nil {
-			absCwd, err := filepath.Abs(".")
-			if err == nil && absInput != absCwd {
-				inputGitignore, err := loadGitignorePatterns(filepath.Join(*inputFolder, ".gitignore"))
-				if err != nil {
-					return nil, err
-				}
-				gitignorePatterns = append(gitignorePatterns, inputGitignore...)
-			}
-		}
-	}
-
-	ignorePatternsList = append(gitignorePatterns, ignorePatternsList...)
 
 	return &Config{
-		InputFolder:      *inputFolder,
-		OutputMarkdown:   *outputMarkdown,
-		AllowedLanguages: allowedLanguages,
-		AllowedFileNames: language.GetAllowedFileNames(allowedLanguages),
-		IgnorePatterns:   ignorePatternsList,
-		MaxFileSize:      *maxFileSize,
-		Help:             *help,
-		Version:          *v,
+		InputFolder:           *inputFolder,
+		OutputMarkdown:        *outputMarkdown,
+		AllowedLanguages:      allowedLanguages,
+		AllowedFileNames:      language.GetAllowedFileNames(allowedLanguages),
+		UserIgnorePatterns:    userIgnoreList,
+		DefaultIgnorePatterns: defaultIgnoreList,
+		MaxFileSize:           *maxFileSize,
+		Help:                  *help,
+		Version:               *v,
 	}, nil
 }
 
@@ -116,30 +97,4 @@ func isExtensionPatternForEnabledLanguage(pattern string, allowedLanguages map[s
 
 func IsConfigValid(config *Config) bool {
 	return config != nil && config.InputFolder != "" && config.MaxFileSize > 0
-}
-
-func loadGitignorePatterns(path string) ([]string, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return []string{}, nil
-		}
-		return nil, err
-	}
-	defer file.Close()
-
-	var patterns []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line != "" && !strings.HasPrefix(line, "#") {
-			patterns = append(patterns, line)
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	return patterns, nil
 }

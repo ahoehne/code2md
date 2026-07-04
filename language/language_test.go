@@ -51,23 +51,14 @@ func TestIsDockerfile(t *testing.T) {
 
 func TestIsFileAllowed(t *testing.T) {
 	allowedLanguages := map[string]bool{
-		".php":        true,
 		".go":         true,
-		".js":         true,
-		".ts":         true,
-		".tsx":        true,
-		".rs":         true,
-		".java":       true,
 		".json":       false,
 		".dockerfile": true,
 	}
 
 	allowedFileNames := map[string]bool{
-		"go.mod":        true,
-		"composer.json": true,
-		"package.json":  true,
-		"pom.xml":       true,
-		"Cargo.toml":    true,
+		"go.mod":  true,
+		"pom.xml": true,
 	}
 
 	tests := []struct {
@@ -75,32 +66,17 @@ func TestIsFileAllowed(t *testing.T) {
 		filename string
 		want     bool
 	}{
-		{"php file", "file.php", true},
-		{"go file", "file.go", true},
-		{"js file", "file.js", true},
-		{"ts file", "file.ts", true},
-		{"java file", "file.java", true},
-		{"java file uppercase", "File.java", true},
-		{"rust file", "main.rs", true},
-		{"tsx file", "App.tsx", true},
-		{"special file Cargo.toml", "Cargo.toml", true},
-		{"special file pom.xml", "pom.xml", true},
-		{"txt file not allowed", "file.txt", false},
-		{"special file go.mod", "go.mod", true},
-		{"special file composer.json", "composer.json", true},
-		{"Dockerfile capitalized", "Dockerfile", true},
-		{"dockerfile lowercase", "dockerfile", true},
-		{"DOCKERFILE uppercase", "DOCKERFILE", true},
-		{"Dockerfile.dev multi-stage", "Dockerfile.dev", true},
-		{"Dockerfile.prod multi-stage", "Dockerfile.prod", true},
-		{"dockerfile.test lowercase multi-stage", "dockerfile.test", true},
-		{"multi-dot js", "file.with.multiple.dots.js", true},
+		{"allowed extension", "file.go", true},
+		{"uppercase extension", "MAIN.GO", true},
+		{"multi-dot extension", "file.with.multiple.dots.go", true},
+		{"hidden file", ".hidden.go", true},
+		{"unknown extension", "file.txt", false},
+		{"disabled extension", "file.json", false},
+		{"uppercase disabled extension", "FILE.JSON", false},
 		{"no extension", "file_without_extension", false},
-		{"multi-dot php", "file.with.multiple.dots.php", true},
-		{"multi-dot go", "file.with.multiple.dots.go", true},
-		{"multi-dot ts", "file.with.multiple.dots.ts", true},
-		{"json file disabled", "file.json", false},
-		{"hidden go file", ".hidden.go", true},
+		{"manifest without extension", "go.mod", true},
+		{"manifest with disallowed extension", "pom.xml", true},
+		{"Dockerfile", "Dockerfile", true},
 	}
 
 	for _, tt := range tests {
@@ -152,37 +128,28 @@ func TestGetMarkdownLanguage(t *testing.T) {
 		filename string
 		want     string
 	}{
-		{"go file", "main.go", "go"},
-		{"js file", "script.js", "js"},
+		{"extension fallback", "main.go", "go"},
+		{"uppercase extension", "SCRIPT.PY", "py"},
+		{"multi-dot extension", "file.test.js", "js"},
+		{"hidden file with extension", ".eslintrc.json", "json"},
+		{"no extension", "README", "plaintext"},
+		{"md file", "README.md", "md"},
+		{"uppercase md", "README.MD", "md"},
+		{"build.gradle", "build.gradle", "gradle"},
 		{"go.mod special", "go.mod", "go"},
 		{"Pipfile special", "Pipfile", "toml"},
 		{"Cargo.toml special", "Cargo.toml", "toml"},
-		{"pyproject.toml", "pyproject.toml", "toml"},
-		{"build.gradle", "build.gradle", "gradle"},
-		{"Dockerfile capitalized", "Dockerfile", "dockerfile"},
-		{"dockerfile lowercase", "dockerfile", "dockerfile"},
-		{"DOCKERFILE uppercase", "DOCKERFILE", "dockerfile"},
-		{"Dockerfile.dev multi-stage", "Dockerfile.dev", "dockerfile"},
-		{"Dockerfile.prod multi-stage", "Dockerfile.prod", "dockerfile"},
-		{"dockerfile.test multi-stage", "dockerfile.test", "dockerfile"},
-		{"no extension", "README", "plaintext"},
-		{"md file", "README.md", "md"},
-		{"php file", "index.php", "php"},
-		{"ts file", "app.ts", "ts"},
-		{"java file", "Main.java", "java"},
-		{"multi-dot extension", "file.test.js", "js"},
-		{"hidden file with extension", ".eslintrc.json", "json"},
-		{"c file", "main.c", "c"},
+		{"Dockerfile", "Dockerfile", "dockerfile"},
 		{"c header maps to c", "header.h", "c"},
-		{"cpp file", "app.cpp", "cpp"},
 		{"cpp header maps to cpp", "header.hpp", "cpp"},
 		{"cc maps to cpp", "util.cc", "cpp"},
 		{"cxx maps to cpp", "util.cxx", "cpp"},
-		{"cs file", "Program.cs", "cs"},
-		{"rust file", "main.rs", "rs"},
-		{"jsx file", "App.jsx", "jsx"},
-		{"tsx file", "App.tsx", "tsx"},
-		{"sql file", "schema.sql", "sql"},
+		{"hh maps to cpp", "header.hh", "cpp"},
+		{"cs maps to csharp", "Program.cs", "csharp"},
+		{"mjs maps to js", "util.mjs", "js"},
+		{"cjs maps to js", "util.cjs", "js"},
+		{"mts maps to ts", "types.mts", "ts"},
+		{"cts maps to ts", "types.cts", "ts"},
 	}
 
 	for _, tt := range tests {
@@ -212,6 +179,8 @@ func TestParseLanguages(t *testing.T) {
 		{"uppercase languages", "GO,JS", langMap(".go", ".js")},
 		{"languages with spaces", " go , js ", langMap(".go", ".js")},
 		{"unsupported language ignored", "go,ruby,js", langMap(".go", ".js")},
+		{"trailing comma ignored", "go,", langMap(".go")},
+		{"blank token ignored", "go, ,js", langMap(".go", ".js")},
 		{"dockerfile explicitly enabled", "dockerfile", langMap(".dockerfile")},
 		{"dockerfile uppercase", "DOCKERFILE", langMap(".dockerfile")},
 	}
@@ -233,112 +202,29 @@ func TestGetAllowedFileNames(t *testing.T) {
 		expected         map[string]bool
 	}{
 		{
-			name: "all languages except dockerfile",
+			name: "union of enabled languages, dockerfile contributes nothing",
 			allowedLanguages: map[string]bool{
 				".go":         true,
-				".php":        true,
-				".js":         true,
-				".ts":         true,
-				".jsx":        true,
-				".tsx":        true,
-				".py":         true,
 				".java":       true,
-				".rs":         true,
 				".dockerfile": true,
 			},
 			expected: map[string]bool{
-				"go.mod":           true,
-				"composer.json":    true,
-				"package.json":     true,
-				"tsconfig.json":    true,
-				"pyproject.toml":   true,
-				"requirements.txt": true,
-				"setup.py":         true,
-				"setup.cfg":        true,
-				"Pipfile":          true,
-				"pom.xml":          true,
-				"build.gradle":     true,
-				"settings.gradle":  true,
-				"Cargo.toml":       true,
-			},
-		},
-		{
-			name: "only rust includes Cargo.toml",
-			allowedLanguages: map[string]bool{
-				".rs": true,
-			},
-			expected: map[string]bool{
-				"Cargo.toml": true,
-			},
-		},
-		{
-			name: "only tsx includes package.json and tsconfig.json",
-			allowedLanguages: map[string]bool{
-				".tsx": true,
-			},
-			expected: map[string]bool{
-				"package.json":  true,
-				"tsconfig.json": true,
-			},
-		},
-		{
-			name: "only python",
-			allowedLanguages: map[string]bool{
-				".py": true,
-			},
-			expected: map[string]bool{
-				"pyproject.toml":   true,
-				"requirements.txt": true,
-				"setup.py":         true,
-				"setup.cfg":        true,
-				"Pipfile":          true,
-			},
-		},
-		{
-			name: "only java includes maven and gradle",
-			allowedLanguages: map[string]bool{
-				".java": true,
-			},
-			expected: map[string]bool{
+				"go.mod":          true,
 				"pom.xml":         true,
 				"build.gradle":    true,
 				"settings.gradle": true,
 			},
 		},
 		{
-			name: "only go",
-			allowedLanguages: map[string]bool{
-				".go": true,
-			},
-			expected: map[string]bool{
-				"go.mod": true,
-			},
-		},
-		{
-			name: "only ts includes package.json and tsconfig.json",
+			name: "disabled language contributes nothing",
 			allowedLanguages: map[string]bool{
 				".ts": true,
+				".py": false,
 			},
 			expected: map[string]bool{
 				"package.json":  true,
 				"tsconfig.json": true,
 			},
-		},
-		{
-			name: "js includes package.json",
-			allowedLanguages: map[string]bool{
-				".js": true,
-			},
-			expected: map[string]bool{
-				"package.json": true,
-			},
-		},
-		{
-			name: "only dockerfile returns empty",
-			allowedLanguages: map[string]bool{
-				".dockerfile": true,
-			},
-			expected: map[string]bool{},
 		},
 		{
 			name:             "no languages",
@@ -438,4 +324,3 @@ func TestGetInactiveLanguages(t *testing.T) {
 		}
 	})
 }
-

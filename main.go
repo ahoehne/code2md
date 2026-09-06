@@ -2,7 +2,6 @@ package main
 
 import (
 	"code2md/c2mConfig"
-	"code2md/language"
 	"code2md/patternMatcher"
 	"code2md/processor"
 	"fmt"
@@ -25,9 +24,14 @@ func main() {
 		return
 	}
 
-	if !c2mConfig.IsConfigValid(config) || config.Help {
-		displayUsageInstructions(config, !config.Help)
+	if config.Help {
+		c2mConfig.PrintUsage(os.Stdout)
 		return
+	}
+	if config.InputFolder == "" {
+		fmt.Fprint(os.Stderr, "Error: provide an input directory with -i or --input\n\n")
+		c2mConfig.PrintUsage(os.Stderr)
+		os.Exit(1)
 	}
 
 	if err := run(config); err != nil {
@@ -98,27 +102,4 @@ func displayVersion() {
 
 	fmt.Printf("code2md %s\n", VersionNumber)
 	fmt.Println(buildInfo.GoVersion)
-}
-
-func displayUsageInstructions(config *c2mConfig.Config, showError bool) {
-	if showError {
-		fmt.Println("Error: You have to provide an input folder.")
-	}
-	fmt.Println("Usage: code2md -i <input_folder> -o <output_markdown> [--languages <languages>] [--ignore <ignore_patterns>]")
-	fmt.Println("| Flag              | Short | Description                                                     |")
-	fmt.Println("| ----------------- | ----- | --------------------------------------------------------------- |")
-	fmt.Println("| `--input`         | `-i`  | Input directory to scan (required)                              |")
-	fmt.Println("| `--output`        | `-o`  | Output Markdown file (optional, defaults to stdout)             |")
-	fmt.Println("| `--languages`     | `-l`  | Comma-separated list of allowed languages (extensions or names) |")
-	fmt.Println("| `--ignore`        | `-I`  | Comma-separated ignore patterns                                 |")
-	fmt.Println("| `--max-file-size` | `-m`  | Maximum file size in bytes (default: 100MB)                     |")
-	fmt.Println("| `--help`          | `-h`  | Show help                                                       |")
-	fmt.Println("| `--version`       | `-v`  | Show version information                                        |")
-
-	if config != nil {
-		activeLangs := language.GetActiveLanguages(config.AllowedLanguages)
-		inactiveLangs := language.GetInactiveLanguages(config.AllowedLanguages)
-		fmt.Printf("By default, these languages are activated: %v\n", activeLangs)
-		fmt.Printf("Supported languages that need to be activated manually: %v\n", inactiveLangs)
-	}
 }

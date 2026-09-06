@@ -91,7 +91,7 @@ code2md -i . -o code.md
 | `--output`        | `-o`  | Output Markdown file (optional, defaults to stdout)             |
 | `--languages`     | `-l`  | Comma-separated list of allowed languages (extensions or names) |
 | `--ignore`        | `-I`  | Comma-separated ignore patterns                                 |
-| `--max-file-size` | `-m`  | Maximum file size in bytes (default: 100MB)                     |
+| `--max-file-size` | `-m`  | Maximum size of each file, e.g. 512KB or 10MB (default: 100MB)  |
 | `--help`          | `-h`  | Show help                                                       |
 | `--version`       | `-v`  | Show version information                                        |
 

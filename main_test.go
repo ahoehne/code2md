@@ -5,6 +5,7 @@ import (
 	"code2md/c2mConfig"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -149,50 +150,19 @@ func TestRun(t *testing.T) {
 }
 
 func TestDisplayVersion(t *testing.T) {
-	output := captureStdout(t, func() {
-		displayVersion()
-	})
-
-	if !strings.Contains(output, "code2md") {
-		t.Error("Output should contain 'code2md'")
+	originalVersion := VersionNumber
+	t.Cleanup(func() { VersionNumber = originalVersion })
+	for _, tt := range []struct{ version, want string }{
+		{"", "code2md development-version"},
+		{"v1.2.3", "code2md v1.2.3"},
+	} {
+		t.Run(tt.want, func(t *testing.T) {
+			VersionNumber = tt.version
+			output := captureStdout(t, displayVersion)
+			want := tt.want + "\n" + runtime.Version() + "\n"
+			if output != want {
+				t.Errorf("version output = %q; want %q", output, want)
+			}
+		})
 	}
-}
-
-func TestDisplayUsageInstructions(t *testing.T) {
-	t.Run("with nil config", func(t *testing.T) {
-		output := captureStdout(t, func() {
-			displayUsageInstructions(nil, false)
-		})
-
-		if !strings.Contains(output, "Usage:") {
-			t.Error("Output should contain usage instructions")
-		}
-		if strings.Contains(output, "By default") {
-			t.Error("Should not show language info with nil config")
-		}
-	})
-
-	t.Run("with valid config shows languages", func(t *testing.T) {
-		config := &c2mConfig.Config{
-			AllowedLanguages: map[string]bool{".go": true, ".js": false},
-		}
-
-		output := captureStdout(t, func() {
-			displayUsageInstructions(config, false)
-		})
-
-		if !strings.Contains(output, "By default") {
-			t.Error("Output should show language info with valid config")
-		}
-	})
-
-	t.Run("shows error when requested", func(t *testing.T) {
-		output := captureStdout(t, func() {
-			displayUsageInstructions(nil, true)
-		})
-
-		if !strings.Contains(output, "Error:") {
-			t.Error("Output should contain error message")
-		}
-	})
 }

@@ -2,7 +2,6 @@ package language
 
 import (
 	"reflect"
-	"sort"
 	"testing"
 )
 
@@ -243,84 +242,24 @@ func TestGetAllowedFileNames(t *testing.T) {
 	}
 }
 
-func TestGetActiveLanguages(t *testing.T) {
-	t.Run("returns active languages", func(t *testing.T) {
-		allowedLanguages := map[string]bool{
-			".go":         true,
-			".js":         true,
-			".php":        false,
-			".dockerfile": true,
-		}
+func TestLanguageNames(t *testing.T) {
+	allowedLanguages := map[string]bool{
+		".go":         true,
+		".js":         true,
+		".php":        false,
+		".py":         false,
+		".dockerfile": true,
+	}
 
-		active := GetActiveLanguages(allowedLanguages)
-		sort.Strings(active)
-
-		expected := []string{"dockerfile", "go", "js"}
-		sort.Strings(expected)
-
-		if !reflect.DeepEqual(active, expected) {
-			t.Errorf("GetActiveLanguages() = %v; want %v", active, expected)
+	t.Run("enabled languages sorted", func(t *testing.T) {
+		if got := LanguageNames(allowedLanguages, true); !reflect.DeepEqual(got, []string{"dockerfile", "go", "js"}) {
+			t.Errorf("LanguageNames(m, true) = %v; want [dockerfile go js]", got)
 		}
 	})
 
-	t.Run("nil map returns empty slice", func(t *testing.T) {
-		active := GetActiveLanguages(nil)
-		if len(active) != 0 {
-			t.Errorf("GetActiveLanguages(nil) = %v; want empty slice", active)
-		}
-	})
-
-	t.Run("no active languages", func(t *testing.T) {
-		allowedLanguages := map[string]bool{
-			".go":  false,
-			".js":  false,
-			".php": false,
-		}
-
-		active := GetActiveLanguages(allowedLanguages)
-		if len(active) != 0 {
-			t.Errorf("GetActiveLanguages() = %v; want empty slice", active)
-		}
-	})
-}
-
-func TestGetInactiveLanguages(t *testing.T) {
-	t.Run("returns inactive languages", func(t *testing.T) {
-		allowedLanguages := map[string]bool{
-			".go":         true,
-			".js":         true,
-			".php":        false,
-			".py":         false,
-			".dockerfile": true,
-		}
-
-		inactive := GetInactiveLanguages(allowedLanguages)
-		sort.Strings(inactive)
-
-		expected := []string{"php", "py"}
-		sort.Strings(expected)
-
-		if !reflect.DeepEqual(inactive, expected) {
-			t.Errorf("GetInactiveLanguages() = %v; want %v", inactive, expected)
-		}
-	})
-
-	t.Run("nil map returns empty slice", func(t *testing.T) {
-		inactive := GetInactiveLanguages(nil)
-		if len(inactive) != 0 {
-			t.Errorf("GetInactiveLanguages(nil) = %v; want empty slice", inactive)
-		}
-	})
-
-	t.Run("all languages active", func(t *testing.T) {
-		allowedLanguages := map[string]bool{
-			".go": true,
-			".js": true,
-		}
-
-		inactive := GetInactiveLanguages(allowedLanguages)
-		if len(inactive) != 0 {
-			t.Errorf("GetInactiveLanguages() = %v; want empty slice", inactive)
+	t.Run("disabled languages sorted", func(t *testing.T) {
+		if got := LanguageNames(allowedLanguages, false); !reflect.DeepEqual(got, []string{"php", "py"}) {
+			t.Errorf("LanguageNames(m, false) = %v; want [php py]", got)
 		}
 	})
 }

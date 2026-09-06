@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -155,22 +156,13 @@ func IsFileAllowed(filename string, allowedLanguages, allowedFileNames map[strin
 	return allowedFileNames[filename] || allowedLanguages[strings.ToLower(filepath.Ext(filename))]
 }
 
-func GetActiveLanguages(allowedLanguages map[string]bool) []string {
-	var active []string
-	for lang, enabled := range allowedLanguages {
-		if enabled {
-			active = append(active, strings.TrimPrefix(lang, "."))
+func LanguageNames(allowedLanguages map[string]bool, enabled bool) []string {
+	var names []string
+	for lang, langEnabled := range allowedLanguages {
+		if langEnabled == enabled {
+			names = append(names, strings.TrimPrefix(lang, "."))
 		}
 	}
-	return active
-}
-
-func GetInactiveLanguages(allowedLanguages map[string]bool) []string {
-	var inactive []string
-	for lang, enabled := range allowedLanguages {
-		if !enabled {
-			inactive = append(inactive, strings.TrimPrefix(lang, "."))
-		}
-	}
-	return inactive
+	sort.Strings(names)
+	return names
 }

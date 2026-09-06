@@ -1,24 +1,37 @@
 package c2mConfig
 
 import (
+	"bytes"
 	"flag"
 	"os"
 	"strings"
 	"testing"
 )
 
-func setupFlagTest(t *testing.T, args ...string) (cleanup func()) {
+func setupFlagTest(t *testing.T, args ...string) {
 	t.Helper()
+	origFlags := flag.CommandLine
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	origArgs := os.Args
 	tempDir := t.TempDir()
 	origDir, _ := os.Getwd()
 	os.Chdir(tempDir)
 	os.Args = append([]string{"cmd"}, args...)
-	return func() {
+	t.Cleanup(func() {
+		flag.CommandLine = origFlags
 		os.Args = origArgs
 		os.Chdir(origDir)
+	})
+}
+
+func parseConfig(t *testing.T, args ...string) *Config {
+	t.Helper()
+	setupFlagTest(t, args...)
+	config, err := InitializeConfigFromFlags()
+	if err != nil {
+		t.Fatalf("InitializeConfigFromFlags() error: %v", err)
 	}
+	return config
 }
 
 func sliceContains(slice []string, val string) bool {
@@ -32,14 +45,7 @@ func sliceContains(slice []string, val string) bool {
 
 func TestInitializeConfigFromFlags(t *testing.T) {
 	t.Run("default ignore patterns present when no flags passed", func(t *testing.T) {
-		tempDir := t.TempDir()
-		cleanup := setupFlagTest(t, "-i", tempDir)
-		defer cleanup()
-
-		config, err := InitializeConfigFromFlags()
-		if err != nil {
-			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
-		}
+		config := parseConfig(t, "-i", t.TempDir())
 
 		for _, d := range strings.Split(defaultIgnoredPatterns, ",") {
 			if !sliceContains(config.DefaultIgnorePatterns, d) {
@@ -52,14 +58,7 @@ func TestInitializeConfigFromFlags(t *testing.T) {
 	})
 
 	t.Run("explicit ignore overrides defaults", func(t *testing.T) {
-		tempDir := t.TempDir()
-		cleanup := setupFlagTest(t, "-i", tempDir, "--ignore", "custom.txt,other.log")
-		defer cleanup()
-
-		config, err := InitializeConfigFromFlags()
-		if err != nil {
-			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
-		}
+		config := parseConfig(t, "-i", t.TempDir(), "--ignore", "custom.txt,other.log")
 
 		for _, expected := range []string{"custom.txt", "other.log"} {
 			if !sliceContains(config.UserIgnorePatterns, expected) {
@@ -75,14 +74,7 @@ func TestInitializeConfigFromFlags(t *testing.T) {
 	})
 
 	t.Run("output file is not turned into an ignore pattern", func(t *testing.T) {
-		tempDir := t.TempDir()
-		cleanup := setupFlagTest(t, "-i", tempDir, "-o", "output.md")
-		defer cleanup()
-
-		config, err := InitializeConfigFromFlags()
-		if err != nil {
-			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
-		}
+		config := parseConfig(t, "-i", t.TempDir(), "-o", "output.md")
 
 		if sliceContains(config.UserIgnorePatterns, "output.md") || sliceContains(config.DefaultIgnorePatterns, "output.md") {
 			t.Errorf("output file should be excluded by path, not by pattern, got %v / %v", config.UserIgnorePatterns, config.DefaultIgnorePatterns)
@@ -93,14 +85,7 @@ func TestInitializeConfigFromFlags(t *testing.T) {
 	})
 
 	t.Run("default yml ignore dropped when yml language enabled", func(t *testing.T) {
-		tempDir := t.TempDir()
-		cleanup := setupFlagTest(t, "-i", tempDir, "-l", "yml,go")
-		defer cleanup()
-
-		config, err := InitializeConfigFromFlags()
-		if err != nil {
-			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
-		}
+		config := parseConfig(t, "-i", t.TempDir(), "-l", "yml,go")
 
 		if sliceContains(config.DefaultIgnorePatterns, "*.yml") {
 			t.Errorf("*.yml should be removed from defaults when yml is enabled, got %v", config.DefaultIgnorePatterns)
@@ -114,14 +99,7 @@ func TestInitializeConfigFromFlags(t *testing.T) {
 	})
 
 	t.Run("explicit ignore preserved even when matching language is enabled", func(t *testing.T) {
-		tempDir := t.TempDir()
-		cleanup := setupFlagTest(t, "-i", tempDir, "-l", "yml", "--ignore", "*.yml")
-		defer cleanup()
-
-		config, err := InitializeConfigFromFlags()
-		if err != nil {
-			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
-		}
+		config := parseConfig(t, "-i", t.TempDir(), "-l", "yml", "--ignore", "*.yml")
 
 		if !sliceContains(config.UserIgnorePatterns, "*.yml") {
 			t.Errorf("explicit --ignore *.yml should be preserved, got %v", config.UserIgnorePatterns)
@@ -129,14 +107,7 @@ func TestInitializeConfigFromFlags(t *testing.T) {
 	})
 
 	t.Run("min.css ignored by default when css enabled", func(t *testing.T) {
-		tempDir := t.TempDir()
-		cleanup := setupFlagTest(t, "-i", tempDir, "-l", "css")
-		defer cleanup()
-
-		config, err := InitializeConfigFromFlags()
-		if err != nil {
-			t.Fatalf("InitializeConfigFromFlags() error: %v", err)
-		}
+		config := parseConfig(t, "-i", t.TempDir(), "-l", "css")
 
 		if !sliceContains(config.DefaultIgnorePatterns, "**.min.css") {
 			t.Errorf("expected **.min.css in default ignore patterns %v", config.DefaultIgnorePatterns)
@@ -144,9 +115,7 @@ func TestInitializeConfigFromFlags(t *testing.T) {
 	})
 
 	t.Run("rejects positional arguments", func(t *testing.T) {
-		tempDir := t.TempDir()
-		cleanup := setupFlagTest(t, "-i", tempDir, "stray-argument")
-		defer cleanup()
+		setupFlagTest(t, "-i", t.TempDir(), "stray-argument")
 
 		if _, err := InitializeConfigFromFlags(); err == nil {
 			t.Error("expected error for unexpected positional arguments")
@@ -154,25 +123,85 @@ func TestInitializeConfigFromFlags(t *testing.T) {
 	})
 }
 
-func TestIsConfigValid(t *testing.T) {
-	tests := []struct {
-		name   string
-		config *Config
-		want   bool
-	}{
-		{"valid config", &Config{InputFolder: "input", OutputMarkdown: "output", MaxFileSize: 1024}, true},
-		{"empty input folder", &Config{InputFolder: "", OutputMarkdown: "output", MaxFileSize: 1024}, false},
-		{"valid without output", &Config{InputFolder: "input", OutputMarkdown: "", MaxFileSize: 1024}, true},
-		{"nil config", nil, false},
-		{"zero max file size", &Config{InputFolder: "input", MaxFileSize: 0}, false},
-		{"negative max file size", &Config{InputFolder: "input", MaxFileSize: -1}, false},
+func TestPrintUsage(t *testing.T) {
+	parseConfig(t)
+	var output bytes.Buffer
+	PrintUsage(&output)
+	for _, want := range []string{
+		"Usage: code2md -i <directory> [options]",
+		"-i, --input directory", "Input directory to scan (required)",
+		"-o, --output file", "Output Markdown file (default: stdout)",
+		"-l, --languages names", "-I, --ignore patterns",
+		"(replaces defaults: *.yaml,*.yml,*.xml)",
+		"-m, --max-file-size size", "Maximum size of each file, e.g. 512KB or 10MB (default: 100MB)",
+		"-h, --help", "-v, --version",
+		"Default languages: c, cc, cjs, cpp, cs, cts, cxx, dockerfile, go, h, hh, hpp, java, js, jsx, mjs, mts, php, py, rs, sh, ts, tsx\n",
+		"Opt-in languages (-l): css, html, json, md, scss, sql, toml, xml, yaml, yml\n",
+	} {
+		if !strings.Contains(output.String(), want) {
+			t.Errorf("help missing %q:\n%s", want, output.String())
+		}
 	}
+	if strings.ContainsAny(output.String(), "|`") {
+		t.Errorf("help contains Markdown formatting:\n%s", output.String())
+	}
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := IsConfigValid(tt.config); got != tt.want {
-				t.Errorf("IsConfigValid(%v) = %v; want %v", tt.config, got, tt.want)
+func TestFlagAliases(t *testing.T) {
+	for _, args := range [][]string{
+		{"-i", "src", "-o", "code.md", "-l", "go", "-I", "*.log", "-m", "42", "-h", "-v"},
+		{"--input", "src", "--output", "code.md", "--languages", "go", "--ignore", "*.log", "--max-file-size", "42", "--help", "--version"},
+	} {
+		t.Run(args[0], func(t *testing.T) {
+			config := parseConfig(t, args...)
+			if config.InputFolder != "src" || config.OutputMarkdown != "code.md" ||
+				config.MaxFileSize != 42 || !config.Help || !config.Version ||
+				!config.AllowedLanguages[".go"] || config.AllowedLanguages[".js"] ||
+				strings.Join(config.UserIgnorePatterns, ",") != "*.log" {
+				t.Errorf("unexpected config: %+v", config)
 			}
 		})
+	}
+}
+
+func TestMaxFileSizeParsing(t *testing.T) {
+	for _, tt := range []struct {
+		input string
+		want  int64
+	}{
+		{"42", 42},
+		{"512B", 512},
+		{"512kb", 512 * 1024},
+		{"10MB", 10 * 1024 * 1024},
+		{"1GB", 1024 * 1024 * 1024},
+	} {
+		t.Run(tt.input, func(t *testing.T) {
+			config := parseConfig(t, "-i", "src", "-m", tt.input)
+			if config.MaxFileSize != tt.want {
+				t.Errorf("MaxFileSize = %d; want %d", config.MaxFileSize, tt.want)
+			}
+		})
+	}
+
+	for _, invalid := range []string{"0", "1.5MB", "99999999999GB"} {
+		t.Run("invalid "+invalid, func(t *testing.T) {
+			setupFlagTest(t, "-i", "src", "-m", invalid)
+			flag.CommandLine.SetOutput(&bytes.Buffer{})
+			if _, err := InitializeConfigFromFlags(); err == nil {
+				t.Errorf("expected an error for size %q", invalid)
+			}
+		})
+	}
+}
+
+func TestInvalidFlagValue(t *testing.T) {
+	setupFlagTest(t, "-m", "invalid")
+	var output bytes.Buffer
+	flag.CommandLine.SetOutput(&output)
+	if _, err := InitializeConfigFromFlags(); err == nil {
+		t.Fatal("expected an error for an invalid file size")
+	}
+	if !strings.Contains(output.String(), "Usage: code2md -i <directory> [options]") {
+		t.Errorf("parse error should show the same help:\n%s", output.String())
 	}
 }
